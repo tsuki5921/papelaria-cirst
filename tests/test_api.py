@@ -280,3 +280,11 @@ def test_upload_rejeita_arquivo_que_nao_e_imagem(client, admin):
     r = client.post("/api/admin/upload", headers=admin,
                     data={"image": (io.BytesIO(b"<?php echo 1; ?>"), "foto.jpg")}, content_type="multipart/form-data")
     assert r.status_code == 400
+
+
+def test_certificado_https_gerado_e_reaproveitado(tmp_path):
+    from backend.certs import ensure_certificate
+    cert, key = ensure_certificate(tmp_path)
+    conteudo = open(cert).read()
+    assert "BEGIN CERTIFICATE" in conteudo and "PRIVATE KEY" in open(key).read()
+    assert ensure_certificate(tmp_path) == (cert, key) and open(cert).read() == conteudo

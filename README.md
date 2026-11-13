@@ -19,14 +19,14 @@ python -m venv .venv
 # Windows:  .venv\Scripts\activate
 # Linux/Mac: source .venv/bin/activate
 
-# 3. Instale a dependência
+# 3. Instale as dependências
 pip install -r requirements.txt
 
 # 4. Inicie a loja
 python run.py
 ```
 
-Abra **http://localhost:5000** no navegador.
+Abra **https://localhost:5000** no navegador.
 
 > ⚠️ Abra sempre pelo endereço acima. Abrir os arquivos `.html` direto (duplo clique) não funciona,
 > pois o site depende da API Python.
@@ -41,11 +41,29 @@ Na primeira execução, o terminal mostra uma **senha gerada** para o painel:
 ==============================================================
 ```
 
-Acesse **http://localhost:5000/admin.html** com ela. Para definir a sua própria senha:
+Acesse **https://localhost:5000/admin.html** com ela. Para definir a sua própria senha:
 
 ```bash
 python -m backend.manage senha
 ```
+
+### HTTPS no seu computador
+
+A loja já inicia em **HTTPS**. Na primeira execução é criado um certificado em `data/certs/`.
+Como ele é gerado no seu próprio PC (autoassinado), o navegador mostra um aviso **uma vez**:
+clique em **Avançado › Continuar para localhost**. A conexão fica criptografada normalmente.
+
+**Para tirar o aviso (cadeado sem alerta)**, use o [mkcert](https://github.com/FiloSottile/mkcert):
+
+```bash
+# Windows (PowerShell):  winget install FiloSottile.mkcert
+# Mac:                   brew install mkcert
+mkcert -install
+mkcert -cert-file data/certs/cert.pem -key-file data/certs/key.pem localhost 127.0.0.1 ::1
+python run.py
+```
+
+Para rodar sem HTTPS: `python run.py --http`.
 
 ### Antes de publicar (checklist)
 
@@ -63,7 +81,7 @@ python -m backend.manage senha
 ```
 papelaria-crista/
 ├── run.py                    # inicia o servidor
-├── requirements.txt          # dependência de produção (Flask)
+├── requirements.txt          # dependências (Flask + cryptography para HTTPS)
 ├── requirements-dev.txt      # + pytest e playwright (testes)
 ├── backend/                  # Python: API REST + regras de negócio
 │   ├── app.py                # rotas, segurança, arquivos estáticos
@@ -82,8 +100,8 @@ papelaria-crista/
 │   ├── js/pages/             # um script por página
 │   └── img/                  # fotos dos produtos, ícones, uploads
 ├── tests/
-│   ├── test_api.py           # 33 testes da API
-│   └── test_e2e.py           # 18 testes no navegador (fluxos reais + 3 tamanhos de tela)
+│   ├── test_api.py           # 34 testes da API
+│   └── test_e2e.py           # 27 testes no navegador (fluxos, telas de PC e celular, HTTPS)
 ├── docs/
 │   ├── API.md                # documentação dos endpoints
 │   ├── RELATORIO_TESTES.md   # relatório dos testes e correções
@@ -106,6 +124,8 @@ papelaria-crista/
 
 ## Decisões técnicas
 
+- **Layout para PC e celular**: o layout de computador vale de 760 px para cima, então notebooks com
+  zoom de 125%/150% do Windows continuam com a versão de PC. Abaixo disso, menu e filtros viram versão de celular.
 - **Flask + SQLite**: uma dependência só, banco em arquivo, nada para instalar além do Python.
   Para crescer, o SQL é padrão e migra para PostgreSQL sem grandes mudanças.
 - **HTML/CSS/JS puros (módulos ES)**: o site carrega rápido e não precisa de etapa de build.
@@ -127,7 +147,7 @@ proteção contra acesso a arquivos fora da pasta do site e limite de pedidos po
 ```bash
 pip install -r requirements-dev.txt
 playwright install chromium
-pytest            # roda os 51 testes (API + navegador)
+pytest            # roda os 61 testes (API + navegador)
 pytest tests/test_api.py   # só a API (não precisa de navegador)
 ```
 
@@ -140,6 +160,6 @@ python -m backend.manage reset    # recria o banco com os dados iniciais (pede c
 
 ## Publicação
 
-Para colocar no ar, use um servidor WSGI (ex.: `pip install waitress` e
+O HTTPS do `run.py` é para uso no seu computador. Para colocar no ar, use um servidor WSGI (ex.: `pip install waitress` e
 `waitress-serve --port=8000 run:app`) atrás de HTTPS. Faça backups periódicos da pasta `data/`.
 As fontes (Cormorant Garamond e Nunito) vêm do Google Fonts; sem internet, o site usa fontes de reserva.

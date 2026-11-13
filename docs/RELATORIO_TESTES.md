@@ -1,6 +1,6 @@
 # Relatório de testes — Papelaria Cristã
 
-**Data:** 12/11/2026  ·  **Resultado final: 51 de 51 testes aprovados** (33 de API + 18 no navegador)
+**Data:** 12/11/2026  ·  **Resultado final: 61 de 61 testes aprovados** (34 de API + 27 no navegador)
 **Ambiente:** Python 3.13, Flask 3.1, Google Chrome (via Playwright), Linux.
 
 ```bash
@@ -19,8 +19,8 @@ pytest -v      # reproduz todos os testes
 | 6 | Cálculo dos valores | Total e economia conferidos no navegador a cada alteração; total recalculado no servidor ignorando preço enviado pelo cliente; preço alterado no navegador é corrigido ao abrir o carrinho | ✅ |
 | 7 | Cadastro de produtos | No painel: validação, promoção ≥ preço rejeitada, upload de foto, cadastro, aparece na loja, ajuste de estoque, exclusão. Na API: criar/editar/ocultar/excluir, slug único, validações, upload só aceita imagens reais | ✅ |
 | 8 | API Python | 33 testes: catálogo, pedidos, autenticação, estoque, transições de pedido, configurações, upload, cabeçalhos de segurança | ✅ |
-| 9 | Responsividade | Todas as páginas em **375 px (celular), 768 px (tablet) e 1366 px (computador)**, sem rolagem horizontal; menu mobile abre e navega; capturas de tela revisadas visualmente | ✅ |
-| 10 | Corrigir erros | 6 problemas encontrados e corrigidos (seção 3); suíte completa reexecutada após cada correção | ✅ |
+| 9 | Responsividade | Todas as páginas em **375 px, 768 px e 1366 px**, sem rolagem horizontal; **layout de PC verificado em 853, 910, 1092, 1280, 1366 e 1920 px** (inclui notebooks com zoom de 125%/150% do Windows): menu completo e filtros ao lado da lista; celular (375/414 px) com menu recolhível | ✅ (após correção) |
+| 10 | Corrigir erros | 7 problemas encontrados e corrigidos (seção 3); suíte completa reexecutada após cada correção | ✅ |
 
 ## 2. Testes de segurança incluídos
 
@@ -37,6 +37,7 @@ pytest -v      # reproduz todos os testes
 | Link `javascript:` nas redes sociais → recusado | ✅ |
 | Nome de produto `<script>` salvo como texto e exibido escapado | ✅ |
 | Cabeçalhos CSP, X-Frame-Options, nosniff presentes | ✅ |
+| Loja servida em **HTTPS** (contexto seguro no navegador), certificado gerado e reaproveitado | ✅ |
 | Pedido com quantidade acima do estoque ou produto inexistente → 400 | ✅ |
 | Confirmação de pedido sem estoque não altera nada (transação desfeita) | ✅ |
 
@@ -50,18 +51,20 @@ pytest -v      # reproduz todos os testes
 | 4 | `404.html` | Sem CSS quando a URL tinha subpasta | `<base href="/">` | `test_404_html_e_json` |
 | 5 | Catálogo (JS) | **“Limpar filtros” não funcionava** (evento de reset cancelado) | Reset do navegador + nova busca | `test_filtros_por_categoria_preco_e_chips` (falhava, passou a passar) |
 | 6 | Painel (JS) | Configurações podiam ser editadas antes de carregar e eram sobrescritas | Formulário inativo até carregar | `test_admin_configura_whatsapp...` |
+| 7 | CSS | **Em PCs com zoom do Windows (125%/150%) a loja aparecia no layout de celular** (relatado pelo cliente) | Layout de PC a partir de 760 px; menu em segunda linha entre 760 e 1180 px; conteúdo mais largo em telas Full HD | `test_pc_usa_layout_de_computador` (6 larguras) |
 
 ## 4. Limitações conhecidas (não são erros)
 
 - **Fontes do Google**: no ambiente de teste não havia acesso à internet; o site usou as fontes de reserva sem quebrar o layout. Em produção, as fontes carregam normalmente.
 - **Pagamento online** não está integrado: o pedido é registrado e finalizado pelo WhatsApp. A integração com um gateway depende de conta e chaves da loja.
+- **Certificado HTTPS local** é autoassinado: o navegador avisa uma vez (ou use mkcert, ver README). Na hospedagem, o HTTPS vem do provedor.
 - **Limites de tentativas** (login e pedidos) ficam em memória e zeram quando o servidor reinicia.
 - **Preços e estoques iniciais** dos 8 produtos são valores de referência — o painel exibe um aviso até que sejam revisados.
 
 ## 5. Saída da última execução
 
 ```
-tests/test_api.py ................................. 33 passed
-tests/test_e2e.py .................. 18 passed
-============================= 51 passed in 49.22s ==============================
+tests/test_api.py .................................. 34 passed
+tests/test_e2e.py ........................... 27 passed
+============================= 61 passed in 57.58s ==============================
 ```

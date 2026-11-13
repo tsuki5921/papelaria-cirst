@@ -456,16 +456,36 @@ dialog[open] { animation: entrar .25s ease; }
 .status--cancelado { background: var(--erro-bg); color: var(--erro); }
 
 /* ---------------------------------------------------------------- responsivo */
-@media (max-width: 1080px) {
-  .busca-topo input { width: 120px; }
-  .rodape__grid { grid-template-columns: 1fr 1fr; }
+/* Telas grandes (monitores Full HD ou maiores) */
+@media (min-width: 1600px) {
+  :root { --largura: 1360px; }
+  .hero__galeria { height: 520px; }
 }
 
-@media (max-width: 920px) {
-  .menu-toggle { display: inline-grid; order: 3; }
-  .header__inner { flex-wrap: wrap; min-height: 64px; }
+/* Notebooks e PCs com zoom do Windows (125%/150%): continua layout de computador,
+   mas o menu passa para uma segunda linha para caber tudo. */
+@media (max-width: 1180px) {
+  .header__inner { flex-wrap: wrap; row-gap: 0; padding-top: .5rem; }
   .logo { margin-right: auto; }
-  .nav { order: 5; flex-basis: 100%; margin: 0; }
+  .nav { order: 5; flex-basis: 100%; margin: 0; border-top: 1px solid var(--borda); }
+  .nav__lista { justify-content: center; padding: .35rem 0; }
+  .busca-topo input { width: 220px; }
+  .rodape__grid { grid-template-columns: 1fr 1fr; }
+  .filtros, .resumo, .detalhe__img { top: 128px; }
+}
+
+@media (max-width: 1000px) {
+  .catalogo { grid-template-columns: 220px 1fr; gap: 1.4rem; }
+  .carrinho { grid-template-columns: 1fr 320px; gap: 1.4rem; }
+  .hero__grid, .detalhe, .sobre-grid { gap: 2rem; }
+  .hero__galeria { height: 380px; }
+}
+
+/* Celulares e tablets em pé */
+@media (max-width: 760px) {
+  .menu-toggle { display: inline-grid; order: 3; }
+  .header__inner { min-height: 64px; padding-top: 0; }
+  .nav { border-top: 0; }
   .nav:not(.aberto) { display: none; }
   .nav__lista { flex-direction: column; align-items: stretch; padding: .5rem 0 1rem; }
   .dropdown { position: static; transform: none; box-shadow: none; border: 0; padding: 0 0 0 1rem; animation: none; }

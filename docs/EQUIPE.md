@@ -29,5 +29,7 @@ O projeto foi desenvolvido pelo Claude, organizado nos quatro papéis pedidos. C
 | HTML → Python | Página 404 em endereços com subpasta carregava sem CSS | `<base href="/">` na 404 |
 | Testes (E2E) → JavaScript | “Limpar filtros” não limpava nada | Evento `reset` corrigido |
 | Testes (E2E) → JavaScript | Era possível editar Configurações antes de os dados carregarem | Formulário fica inativo até carregar |
+| Cliente → CSS | No PC com zoom do Windows a loja abria no layout de celular | Novos pontos de quebra (PC a partir de 760 px) |
+| Cliente → Python | Rodar em HTTPS no computador | `backend/certs.py` + `run.py` em HTTPS por padrão |
 
 Detalhes de cada teste em [RELATORIO_TESTES.md](RELATORIO_TESTES.md).

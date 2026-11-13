@@ -318,3 +318,46 @@ def test_admin_sair(page):
     page.wait_for_selector("#login-view:not([hidden])")
     page.reload()
     assert page.is_visible("#login-view")
+
+
+# ---------------------------------------------------------------- 9b. layout de computador (inclui zoom do Windows)
+@pytest.mark.parametrize("width", [853, 910, 1092, 1280, 1366, 1920])
+def test_pc_usa_layout_de_computador(page, width):
+    """1366/1280 px com zoom de 125% ou 150% no Windows viram ~853–1092 px no navegador."""
+    page.set_viewport_size({"width": width, "height": 800})
+    page.goto("produtos.html", wait_until="networkidle")
+    assert page.is_hidden(".menu-toggle"), "não deve mostrar o menu de celular no PC"
+    assert page.is_visible("#menu >> text=Ofertas")
+    assert page.is_visible("#filtros"), "filtros devem ficar visíveis ao lado no PC"
+    filtros, lista = page.locator("#filtros").bounding_box(), page.locator("#lista").bounding_box()
+    assert lista["x"] > filtros["x"] + filtros["width"] - 1, "lista deve ficar ao lado dos filtros"
+    assert page.evaluate("getComputedStyle(document.querySelector('#lista')).gridTemplateColumns.split(' ').length") >= 2
+
+
+@pytest.mark.parametrize("width", [375, 414])
+def test_celular_usa_layout_de_celular(page, width):
+    page.set_viewport_size({"width": width, "height": 800})
+    page.goto("produtos.html", wait_until="networkidle")
+    assert page.is_visible(".menu-toggle") and page.is_hidden("#menu")
+
+
+# ---------------------------------------------------------------- HTTPS
+def test_loja_funciona_em_https(browser, tmp_path):
+    from backend.certs import ensure_certificate
+    cert = ensure_certificate(tmp_path / "certs")
+    app = create_app({"DATABASE": str(tmp_path / "s.db"), "UPLOAD_DIR": str(tmp_path / "u"), "ADMIN_PASSWORD": PASSWORD})
+    srv = make_server("127.0.0.1", 0, app, threaded=True, ssl_context=cert)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    base = f"https://localhost:{srv.server_port}/"
+    ctx = browser.new_context(ignore_https_errors=True, bypass_csp=True)
+    ctx.route(re.compile(r"fonts\.(googleapis|gstatic)\.com"), lambda r: r.abort())
+    pg = ctx.new_page()
+    try:
+        pg.goto(base + "produtos.html", wait_until="networkidle")
+        assert pg.url.startswith("https://")
+        assert pg.evaluate("window.isSecureContext") is True
+        pg.click("[data-add-cart]")
+        assert pg.text_content("#cart-badge") == "1"
+    finally:
+        ctx.close()
+        srv.shutdown()
