@@ -1,10 +1,14 @@
 """Papelaria Cristã — servidor Flask (API REST + arquivos do site)."""
+import base64
+import hashlib
 import os
+import re
 import secrets
 import time
 from pathlib import Path
+from urllib.parse import quote
 
-from flask import Flask, abort, jsonify, request, send_from_directory
+from flask import Flask, abort, g, jsonify, redirect, request, send_from_directory
 
 from . import auth, services
 from .db import close_db, connect, get_db, init_db
@@ -14,6 +18,26 @@ ROOT = Path(__file__).resolve().parent.parent
 FRONTEND = ROOT / "frontend"
 IMAGE_SIGNATURES = {b"\xff\xd8\xff": "jpg", b"\x89PNG\r\n\x1a\n": "png"}
 _order_hits = {}
+_spa_cache = {}
+
+# Endereços da versão antiga (várias páginas) -> rotas da loja em index.html único
+OLD_PAGES = {"produtos.html": "produtos", "ofertas.html": "ofertas", "carrinho.html": "carrinho",
+             "sobre.html": "sobre", "contato.html": "contato", "produto.html": "produto"}
+
+
+def spa_csp_hashes():
+    """Hashes SHA-256 dos <script>/<style> embutidos no index.html (permitidos pela CSP
+    sem precisar de 'unsafe-inline'). Recalculado quando o arquivo muda."""
+    path = FRONTEND / "index.html"
+    mtime = path.stat().st_mtime
+    if _spa_cache.get("mtime") != mtime:
+        html = path.read_text(encoding="utf-8")
+        def h(code):
+            return "'sha256-" + base64.b64encode(hashlib.sha256(code.encode()).digest()).decode() + "'"
+        scripts = [h(m) for m in re.findall(r"<script>(.*?)</script>", html, re.S)]
+        styles = [h(m) for m in re.findall(r"<style>(.*?)</style>", html, re.S)]
+        _spa_cache.update(mtime=mtime, scripts=" ".join(scripts), styles=" ".join(styles))
+    return _spa_cache["scripts"], _spa_cache["styles"]
 
 
 def create_app(config=None):
@@ -61,10 +85,11 @@ def create_app(config=None):
         resp.headers["X-Content-Type-Options"] = "nosniff"
         resp.headers["X-Frame-Options"] = "DENY"
         resp.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        scripts, styles = g.get("spa_hashes", ("", ""))
         resp.headers["Content-Security-Policy"] = (
-            "default-src 'self'; img-src 'self' data:; script-src 'self'; "
-            "style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; "
-            "connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+            f"default-src 'self'; img-src 'self' data:; script-src 'self' {scripts}; "
+            f"style-src 'self' {styles} https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; "
+            "connect-src 'self' https://viacep.com.br; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
         )
         if request.path.startswith("/api/"):
             resp.headers["Cache-Control"] = "no-store"
@@ -223,13 +248,26 @@ def create_app(config=None):
         return send_from_directory(app.config["UPLOAD_DIR"], name)
 
     @app.get("/")
+    @app.get("/index.html")
     def index():
-        return send_from_directory(FRONTEND, "index.html")
+        g.spa_hashes = spa_csp_hashes()
+        resp = send_from_directory(FRONTEND, "index.html")
+        resp.headers["Cache-Control"] = "no-cache"
+        return resp
 
     @app.get("/<path:path>")
     def static_files(path):
         if path.startswith("api/"):
             abort(404)
+        if path in OLD_PAGES:
+            route = OLD_PAGES[path]
+            if route == "produto":
+                route += "/" + quote(request.args.get("p", ""), safe="")
+            elif route == "produtos" and request.args:
+                params = {"q": request.args.get("q"), "cat": request.args.get("categoria")}
+                qs = "&".join(f"{k}={quote(v)}" for k, v in params.items() if v)
+                route += f"?{qs}" if qs else ""
+            return redirect(f"/#/{route}", code=301)
         return send_from_directory(FRONTEND, path)  # protege contra "../"
 
     return app

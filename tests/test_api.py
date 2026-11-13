@@ -10,10 +10,31 @@ def first_product(client, **filters):
 
 # ---------------------------------------------------------------- páginas e arquivos
 def test_todas_as_paginas_carregam(client):
-    for page in ["/", "/index.html", "/produtos.html", "/ofertas.html", "/produto.html", "/sobre.html",
-                 "/contato.html", "/carrinho.html", "/admin.html", "/css/style.css", "/js/core/layout.js",
+    for page in ["/", "/index.html", "/admin.html", "/css/style.css", "/js/core/layout.js",
                  "/robots.txt", "/img/favicon.svg"]:
         assert client.get(page).status_code == 200, page
+
+
+def test_loja_e_um_arquivo_unico_autossuficiente(client):
+    html = client.get("/").get_data(as_text=True)
+    assert "<style>" in html and "<script>" in html
+    assert 'src="js/' not in html and 'href="css/' not in html  # nada externo do próprio site
+    assert html.count("data:image/jpeg;base64,") == 8           # as 8 fotos embutidas
+
+
+def test_csp_da_loja_permite_apenas_os_scripts_embutidos(client):
+    csp = client.get("/").headers["Content-Security-Policy"]
+    assert "'sha256-" in csp and "unsafe-inline" not in csp and "unsafe-eval" not in csp
+
+
+def test_paginas_antigas_redirecionam(client):
+    casos = {"/produtos.html?categoria=biblias": "/#/produtos?cat=biblias",
+             "/produto.html?p=biblia-nvi-ele-vive": "/#/produto/biblia-nvi-ele-vive",
+             "/ofertas.html": "/#/ofertas", "/carrinho.html": "/#/carrinho",
+             "/sobre.html": "/#/sobre", "/contato.html": "/#/contato", "/produtos.html": "/#/produtos"}
+    for antigo, novo in casos.items():
+        r = client.get(antigo)
+        assert r.status_code == 301 and r.headers["Location"] == novo, antigo
 
 
 def test_imagens_dos_produtos_existem(client):

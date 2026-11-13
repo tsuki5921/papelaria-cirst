@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Papelaria Cristã | Bíblias, devocionais, livros e presentes cristãos</title>
+  <meta name="description" content="Papelaria Cristã: Bíblias, devocionais, livros cristãos e kits de presente escolhidos com carinho. Monte seu carrinho e finalize pelo WhatsApp.">
+  <meta name="theme-color" content="#7d5ab4">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Papelaria Cristã">
+  <meta property="og:title" content="Papelaria Cristã">
+  <meta property="og:description" content="Bíblias, devocionais, livros e presentes que inspiram fé.">
+  <link rel="icon" href="__FAVICON__">
+  <link rel="apple-touch-icon" href="__FAVICON__">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=Nunito:wght@400;600;700;800;900&display=swap">
+  <style>__CSS__</style>
+</head>
+<body>
+  <a class="pular" href="#app">Pular para o conteúdo</a>
+
+  <div class="aviso-topo" id="aviso-topo" aria-live="off"></div>
+
+  <header class="cabecalho" id="cabecalho">
+    <div class="container cabecalho__linha">
+      <button class="icone-btn botao-menu" type="button" id="abrir-menu" aria-label="Abrir menu" aria-controls="menu-lateral" aria-expanded="false">
+        <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
+      </button>
+      <a class="marca" href="#/" aria-label="Papelaria Cristã — início">
+        <span data-logo></span>
+        <span class="marca__nome">Papelaria Cristã<small>papelaria com propósito</small></span>
+      </a>
+      <nav aria-label="Menu principal"><ul class="menu" id="menu-pc"></ul></nav>
+      <form class="busca" id="busca" role="search" autocomplete="off">
+        <div class="busca__campo">
+          <label class="sr-only" for="busca-campo">Buscar produtos</label>
+          <input id="busca-campo" type="search" placeholder="Buscar Bíblias, livros, presentes…" maxlength="80"
+                 aria-controls="sugestoes" aria-expanded="false" aria-autocomplete="list">
+          <button type="submit" aria-label="Buscar"><svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button>
+        </div>
+        <div class="sugestoes" id="sugestoes" hidden></div>
+      </form>
+      <div class="acoes-topo">
+        <a class="icone-btn so-pc" href="#/favoritos" aria-label="Favoritos">
+          <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-9.2-8.6C1.2 8.3 3 4.5 6.6 4.5c2 0 3.4 1.1 4.4 2.6 1-1.5 2.4-2.6 4.4-2.6 3.6 0 5.4 3.8 3.8 6.9C19 15.6 12 20 12 20z"/></svg>
+          <span class="contador" data-contador="favs"></span>
+        </a>
+        <button class="icone-btn" type="button" id="abrir-carrinho" aria-label="Abrir carrinho" aria-controls="gaveta" aria-expanded="false">
+          <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1.2 11.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>
+          <span class="contador" data-contador="carrinho"></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main id="app" tabindex="-1"></main>
+
+  <footer class="rodape" id="rodape"></footer>
+
+  <!-- barra inferior (celular) -->
+  <nav class="barra-inferior" aria-label="Atalhos">
+    <a href="#/" data-rota="">
+      <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V20h-5v-6H9v6H4z"/></svg>Início</a>
+    <a href="#/produtos" data-rota="produtos">
+      <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg>Produtos</a>
+    <a href="#/favoritos" data-rota="favoritos">
+      <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-9.2-8.6C1.2 8.3 3 4.5 6.6 4.5c2 0 3.4 1.1 4.4 2.6 1-1.5 2.4-2.6 4.4-2.6 3.6 0 5.4 3.8 3.8 6.9C19 15.6 12 20 12 20z"/></svg>Favoritos<span class="contador" data-contador="favs"></span></a>
+    <a href="#/carrinho" data-rota="carrinho">
+      <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1.2 11.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>Carrinho<span class="contador" data-contador="carrinho"></span></a>
+  </nav>
+
+  <!-- menu lateral (celular/tablet) -->
+  <div class="painel-lateral painel-lateral--esq" id="menu-lateral" aria-hidden="true">
+    <div class="painel-lateral__fundo" data-fechar-painel></div>
+    <div class="painel-lateral__caixa" role="dialog" aria-modal="true" aria-label="Menu">
+      <div class="painel-lateral__topo"><h2>Menu</h2><button class="icone-btn" type="button" data-fechar-painel aria-label="Fechar menu">✕</button></div>
+      <div class="painel-lateral__corpo" id="menu-lateral-corpo"></div>
+    </div>
+  </div>
+
+  <!-- gaveta do carrinho -->
+  <div class="painel-lateral painel-lateral--dir" id="gaveta" aria-hidden="true">
+    <div class="painel-lateral__fundo" data-fechar-painel></div>
+    <div class="painel-lateral__caixa" role="dialog" aria-modal="true" aria-labelledby="gaveta-titulo">
+      <div class="painel-lateral__topo"><h2 id="gaveta-titulo">Seu carrinho</h2><button class="icone-btn" type="button" data-fechar-painel aria-label="Fechar carrinho">✕</button></div>
+      <div class="painel-lateral__corpo" id="gaveta-corpo"></div>
+      <div class="painel-lateral__rodape" id="gaveta-rodape"></div>
+    </div>
+  </div>
+
+  <dialog id="modal-espiar" aria-label="Detalhes do produto"></dialog>
+
+  <button class="topo-btn" type="button" id="topo-btn" aria-label="Voltar ao topo">
+    <svg class="icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="m6 14 6-6 6 6"/></svg>
+  </button>
+  <div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+
+  <noscript><p class="container alerta alerta--aviso">Ative o JavaScript do navegador para usar a loja.</p></noscript>
+
+  <script>__JS__</script>
+</body>
+</html>

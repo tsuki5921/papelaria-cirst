@@ -6,7 +6,37 @@ com cadastro de produtos, controle de estoque e gestão de pedidos, além de tes
 
 ---
 
-## Como executar
+## ⭐ A loja em um único arquivo: `frontend/index.html`
+
+A loja inteira (visual, funcionalidades, catálogo e as 8 fotos) está **dentro de um só arquivo**.
+
+- **Sem instalar nada:** dê dois cliques em `frontend/index.html`. Abre no PC e no celular (envie o arquivo
+  para o celular e abra no navegador). O carrinho e os favoritos ficam salvos no aparelho, e o pedido sai
+  pronto para o WhatsApp.
+  Para isso, preencha o WhatsApp da loja no início do script do arquivo (procure por
+  `CONFIGURACAO_LOJA`). Sem WhatsApp configurado, o cliente pode **copiar o resumo do pedido**.
+- **Com o servidor Python** (`python run.py`), o mesmo arquivo passa a usar automaticamente os produtos,
+  estoques e contatos do **painel administrativo** e registra os pedidos no banco.
+- **Para hospedar:** o `index.html` funciona em qualquer hospedagem de site estático com HTTPS
+  (Netlify, Vercel, GitHub Pages, Hostinger...). O painel administrativo precisa do servidor Python.
+
+**O que tem na loja:** banner em carrossel (arrasta com o dedo), vitrine com abas, categorias, busca com
+sugestões enquanto digita (atalho `/`), filtros por categoria, preço, ofertas, disponibilidade e favoritos,
+ordenação, página de produto com zoom na foto, "espiar" produto sem sair da página, favoritos, gaveta do
+carrinho com desfazer, produtos vistos recentemente, checkout em 5 etapas (dados, retirada ou entrega com
+CEP automático, pagamento preferido, presente com mensagem do cartão, observações), barra de atalhos no
+celular, versículo do dia e animações suaves (desligadas para quem prefere menos movimento).
+
+**Para editar o visual ou o código da loja**, altere `frontend/loja/` (`loja.css`, `loja.js`,
+`index.template.html`) e gere o arquivo de novo:
+
+```bash
+python tools/build_loja.py
+```
+
+---
+
+## Como executar o servidor (painel administrativo)
 
 Pré-requisito: **Python 3.10+** ([python.org/downloads](https://www.python.org/downloads/) — no Windows,
 marque **“Add python.exe to PATH”** durante a instalação).
@@ -104,16 +134,17 @@ papelaria-crista/
 │   ├── schema.sql            # estrutura do banco
 │   ├── seed_data.py          # categorias e produtos iniciais
 │   └── manage.py             # comandos: senha, backup, reset
-├── frontend/                 # site (HTML, CSS e JavaScript puros)
-│   ├── index.html  produtos.html  ofertas.html  produto.html
-│   ├── carrinho.html  sobre.html  contato.html  admin.html  404.html
-│   ├── css/style.css         # identidade visual completa
-│   ├── js/core/              # api.js, cart.js, layout.js, utils.js (reutilizáveis)
-│   ├── js/pages/             # um script por página
+├── frontend/
+│   ├── index.html            # ⭐ A LOJA INTEIRA EM UM ARQUIVO (gerado)
+│   ├── loja/                 # código-fonte da loja: loja.css, loja.js, index.template.html
+│   ├── admin.html  404.html  # painel administrativo e página de erro
+│   ├── css/style.css         # visual do painel
+│   ├── js/core/  js/pages/   # scripts do painel
 │   └── img/                  # fotos dos produtos, ícones, uploads
+├── tools/build_loja.py       # gera o frontend/index.html
 ├── tests/
-│   ├── test_api.py           # 36 testes da API
-│   └── test_e2e.py           # 27 testes no navegador (fluxos, telas de PC e celular, HTTPS)
+│   ├── test_api.py           # 39 testes da API
+│   └── test_e2e.py           # 29 testes no navegador (loja, painel, PC, celular, HTTPS, arquivo sozinho)
 ├── docs/
 │   ├── API.md                # documentação dos endpoints
 │   ├── RELATORIO_TESTES.md   # relatório dos testes e correções
@@ -159,7 +190,7 @@ proteção contra acesso a arquivos fora da pasta do site e limite de pedidos po
 ```bash
 pip install -r requirements-dev.txt
 playwright install chromium
-pytest            # roda os 63 testes (API + navegador)
+pytest            # roda os 68 testes (API + navegador)
 pytest tests/test_api.py   # só a API (não precisa de navegador)
 ```
 

@@ -1,11 +1,29 @@
 # Relatório de testes — Papelaria Cristã
 
-**Data:** 12/11/2026  ·  **Resultado final: 63 de 63 testes aprovados** (36 de API + 27 no navegador)
+**Data:** 12/11/2026  ·  **Resultado final: 68 de 68 testes aprovados** (39 de API + 29 no navegador)
 **Ambiente:** Python 3.13, Flask 3.1, Google Chrome (via Playwright), Linux.
 
 ```bash
 pytest -v      # reproduz todos os testes
 ```
+
+## 0. Nova loja em `index.html` único (13/11/2026)
+
+A loja foi reconstruída como um único arquivo. Os testes no navegador foram reescritos para ela e cobrem:
+todas as rotas em celular, tablet e PC (sem rolagem horizontal, sem erros de JavaScript); layout de PC em
+800–1920 px (zoom do Windows) e de celular em 360–414 px (menu lateral, barra inferior, filtros em painel);
+nenhum link quebrado; busca com sugestões; filtros, ordenação, chips e limpar; ofertas; categoria vazia;
+compra completa (adicionar, gaveta, quantidades limitadas ao estoque, remover e desfazer, validação, entrega
+com endereço, pagamento, presente) com o pedido conferido na API; carrinho recalculado com preço e estoque
+do servidor; favoritos, espiar e carrossel; **arquivo aberto sozinho, sem servidor**; endereços antigos
+redirecionando; HTTPS; painel administrativo refletindo na loja. Também foi verificado manualmente o
+funcionamento dentro de um quadro restrito (como na página publicada): sem armazenamento local, a loja
+continua funcionando.
+
+Correções feitas nesta etapa: ouvintes de clique que se acumulavam no catálogo; busca com `&` quebrando o
+endereço; estilo inline bloqueado pela CSP; cartão sozinho na última linha da vitrine; aviso do topo
+cortado no celular; menu virando "versão celular" no PC com zoom; filtros fechados ainda alcançáveis pelo
+teclado no celular; `window.open` e compartilhamento bloqueados em páginas publicadas (trocados por links).
 
 ## 1. Os 10 testes solicitados
 
@@ -66,7 +84,7 @@ pytest -v      # reproduz todos os testes
 ## 5. Saída da última execução
 
 ```
-tests/test_api.py .................................... 36 passed
-tests/test_e2e.py ........................... 27 passed
-============================= 63 passed in 58.49s ==============================
+tests/test_api.py ....................................... 39 passed
+tests/test_e2e.py ............................. 29 passed
+============================= 68 passed in 65.94s ==============================
 ```

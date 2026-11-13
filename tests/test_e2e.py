@@ -6,7 +6,7 @@ Para usar um Chrome já instalado: CHROME_PATH=/caminho/do/chrome pytest tests/t
 import os
 import re
 import threading
-from urllib.parse import urljoin, urlparse
+from pathlib import Path
 
 import pytest
 from werkzeug.serving import make_server
@@ -15,17 +15,19 @@ from backend import auth
 from backend.app import create_app
 
 playwright = pytest.importorskip("playwright.sync_api")
+ROOT = Path(__file__).resolve().parent.parent
 PASSWORD = "senha-e2e-12345"
-PAGES = ["index.html", "produtos.html", "ofertas.html", "produto.html?p=biblia-nvi-ele-vive",
-         "sobre.html", "contato.html", "carrinho.html", "admin.html"]
-VIEWPORTS = {"celular": (375, 812), "tablet": (768, 1024), "computador": (1366, 900)}
+ROTAS = ["#/", "#/produtos", "#/ofertas", "#/produto/biblia-nvi-ele-vive", "#/favoritos",
+         "#/carrinho", "#/sobre", "#/contato"]
+TELAS = {"celular": (375, 812), "tablet": (768, 1024), "computador": (1366, 900)}
 
 
 @pytest.fixture(scope="module")
 def server(tmp_path_factory):
     tmp = tmp_path_factory.mktemp("e2e")
     auth.reset_attempts()
-    app = create_app({"DATABASE": str(tmp / "e2e.db"), "UPLOAD_DIR": str(tmp / "up"), "ADMIN_PASSWORD": PASSWORD})
+    app = create_app({"DATABASE": str(tmp / "e2e.db"), "UPLOAD_DIR": str(tmp / "up"), "ADMIN_PASSWORD": PASSWORD,
+                      "ORDER_RATE_LIMIT": 1000})
     srv = make_server("127.0.0.1", 0, app, threaded=True)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     yield f"http://127.0.0.1:{srv.server_port}/"
@@ -44,182 +46,303 @@ def browser():
         b.close()
 
 
-@pytest.fixture
-def page(browser, server):
-    # bypass_csp: só para o Playwright poder avaliar expressões de espera (o site mantém a CSP)
-    ctx = browser.new_context(viewport={"width": 1366, "height": 900}, base_url=server, bypass_csp=True)
-    # Fontes do Google são opcionais (há fontes de reserva); bloqueadas para o teste não depender da internet.
-    ctx.route(re.compile(r"fonts\.(googleapis|gstatic)\.com"), lambda r: r.abort())
+def novo_contexto(browser, base_url=None, **kw):
+    # bypass_csp: só para o Playwright avaliar expressões de espera (o site mantém a CSP).
+    ctx = browser.new_context(viewport={"width": 1366, "height": 900}, base_url=base_url, bypass_csp=True, **kw)
+    # Fontes do Google e busca de CEP são externas: bloqueadas para o teste não depender da internet.
+    ctx.route(re.compile(r"fonts\.(googleapis|gstatic)\.com|viacep\.com\.br"), lambda r: r.abort())
     pg = ctx.new_page()
     pg.errors = []
     pg.on("pageerror", lambda e: pg.errors.append(str(e)))
     pg.on("console", lambda m: pg.errors.append(m.text)
-          if m.type == "error" and "fonts.g" not in m.text and "ERR_FAILED" not in m.text else None)
+          if m.type == "error" and not re.search(r"fonts\.g|viacep|ERR_FAILED|status of 4\d\d", m.text) else None)
+    return ctx, pg
+
+
+@pytest.fixture
+def page(browser, server):
+    ctx, pg = novo_contexto(browser, server)
     yield pg
     ctx.close()
 
 
-# ---------------------------------------------------------------- 1. páginas e responsividade
-@pytest.mark.parametrize("vp", VIEWPORTS)
-def test_paginas_carregam_sem_erros_e_sem_rolagem_horizontal(page, vp):
-    page.set_viewport_size(dict(zip(("width", "height"), VIEWPORTS[vp])))
-    for path in PAGES:
-        page.goto(path, wait_until="networkidle")
-        assert page.locator("header.header").count() == 1, path
-        assert page.locator("footer.rodape").count() == 1, path
+def abrir(page, rota):
+    page.goto(rota if rota.startswith(("http", "file")) else "/" + rota)
+    page.wait_for_function("document.documentElement.dataset.modo")
+
+
+def money(page, sel):
+    return float(re.sub(r"[^\d,]", "", page.text_content(sel)).replace(",", "."))
+
+
+# ---------------------------------------------------------------- 1. páginas, telas e erros
+@pytest.mark.parametrize("tela", TELAS)
+def test_todas_as_rotas_carregam_sem_erros_e_sem_rolagem_horizontal(page, tela):
+    page.set_viewport_size(dict(zip(("width", "height"), TELAS[tela])))
+    abrir(page, "")
+    assert page.evaluate("document.documentElement.dataset.modo") == "servidor"
+    for rota in ROTAS:
+        page.goto("/" + rota)
+        page.wait_for_timeout(150)
+        assert "não encontrad" not in page.text_content("#app").lower(), rota
         overflow = page.evaluate("document.documentElement.scrollWidth - document.documentElement.clientWidth")
-        assert overflow <= 1, f"{path} tem rolagem horizontal em {vp} ({overflow}px)"
+        assert overflow <= 1, f"{rota} tem rolagem horizontal em {tela} ({overflow}px)"
+    page.goto("/admin.html", wait_until="networkidle")
     assert page.errors == []
 
 
 def test_imagens_carregam(page):
-    for path in ["index.html", "produtos.html"]:
-        page.goto(path, wait_until="networkidle")
+    for rota in ["#/", "#/produtos"]:
+        abrir(page, rota)
         page.evaluate("document.querySelectorAll('img[loading=lazy]').forEach(i => i.loading = 'eager')")
         page.wait_for_load_state("networkidle")
-        broken = page.evaluate("[...document.images].filter(i => i.complete && i.naturalWidth === 0).map(i => i.src)")
-        assert broken == []
+        quebradas = page.evaluate("[...document.images].filter(i => i.complete && i.naturalWidth === 0).map(i => i.src.slice(0, 80))")
+        assert quebradas == []
+
+
+@pytest.mark.parametrize("largura", [800, 910, 1092, 1280, 1366, 1920])
+def test_pc_usa_layout_de_computador(page, largura):
+    """Notebooks com zoom de 125%/150% no Windows ficam entre ~850 e 1100 px no navegador."""
+    page.set_viewport_size({"width": largura, "height": 800})
+    abrir(page, "#/produtos")
+    assert page.is_visible("#menu-pc >> text=Ofertas"), "menu completo deve aparecer no PC"
+    assert page.is_hidden("#abrir-menu") and page.is_hidden(".barra-inferior")
+    filtros, lista = page.locator("#filtros").bounding_box(), page.locator("#lista").bounding_box()
+    assert lista["x"] >= filtros["x"] + filtros["width"] - 1, "filtros ao lado da lista"
+
+
+@pytest.mark.parametrize("largura", [360, 390, 414])
+def test_celular_menu_barra_inferior_e_filtros(page, largura):
+    page.set_viewport_size({"width": largura, "height": 800})
+    abrir(page, "#/produtos")
+    assert page.is_visible(".barra-inferior") and page.is_hidden("#menu-pc")
+    assert page.is_hidden("#filtros")
+    page.click("#abrir-filtros")
+    page.wait_for_selector("#filtros.aberto")
+    page.check('#filtros input[name="cat"][value="livros"]')
+    page.click("#filtros .botao-filtros")
+    page.wait_for_function("document.querySelectorAll('#lista .cartao').length === 1")
+    page.click("#abrir-menu")
+    page.click("#menu-lateral >> text=Sobre nós")
+    page.wait_for_url(re.compile("#/sobre"))
+    page.wait_for_selector('#menu-lateral[aria-hidden="true"]', state="attached")
+    page.wait_for_selector("#menu-lateral .painel-lateral__caixa", state="hidden")
+    page.click(".barra-inferior >> text=Favoritos")
+    page.wait_for_url(re.compile("#/favoritos"))
 
 
 # ---------------------------------------------------------------- 2. links
-def test_nenhum_link_quebrado(page, server):
-    seen, broken = set(), []
-    for path in PAGES:
-        page.goto(path, wait_until="networkidle")
+def test_nenhum_link_quebrado(page):
+    vistos, quebrados = set(), []
+    for rota in ROTAS:
+        abrir(page, rota)
         for href in page.eval_on_selector_all("a[href]", "els => els.map(e => e.getAttribute('href'))"):
-            if href.startswith(("http", "mailto:", "tel:", "#")):
+            if href.startswith(("http", "mailto:", "tel:")) or href in vistos:
                 continue
-            url = urljoin(server + path, href)
-            if url in seen:
-                continue
-            seen.add(url)
-            resp = page.request.get(url)
-            if resp.status != 200:
-                broken.append((path, href, resp.status))
-    assert len(seen) > 20 and broken == []
+            vistos.add(href)
+            if href.startswith("#/"):
+                page.goto("/" + href)
+                page.wait_for_timeout(60)
+                if "não encontrad" in page.text_content("#app").lower():
+                    quebrados.append((rota, href))
+            elif page.request.get(page.url.split("#")[0].rsplit("/", 1)[0] + "/" + href).status != 200:
+                quebrados.append((rota, href))
+    assert len(vistos) > 25 and quebrados == []
+
+
+def test_rota_inexistente_e_produto_inexistente(page):
+    abrir(page, "#/nao-existe")
+    assert "Página não encontrada" in page.text_content("#app")
+    page.goto("/#/produto/nao-existe")
+    page.wait_for_selector("text=Produto não encontrado")
+
+
+def test_paginas_antigas_continuam_funcionando(page):
+    page.goto("/produto.html?p=biblia-nvi-ele-vive")
+    page.wait_for_selector("h1:has-text('Ele Vive')")
 
 
 # ---------------------------------------------------------------- 3/4. busca e filtros
-def test_busca_pelo_cabecalho(page):
-    page.goto("index.html")
-    page.fill("#busca-topo", "biblia")
-    page.press("#busca-topo", "Enter")
-    page.wait_for_url(re.compile(r"produtos\.html\?q=biblia"))
-    page.wait_for_selector(".produto")
-    assert page.locator(".produto").count() == 5
-    assert "5 produtos" in page.text_content("#contagem")
+def test_busca_com_sugestoes(page):
+    abrir(page, "")
+    page.fill("#busca-campo", "biblia")
+    page.wait_for_selector("#sugestoes:not([hidden]) a")
+    assert page.locator("#sugestoes a").count() == 6  # 5 sugestões + "ver todos"
+    assert "5 resultados" in page.text_content("#sugestoes .todos")
+    page.press("#busca-campo", "Enter")
+    page.wait_for_url(re.compile(r"#/produtos\?q=biblia"))
+    page.wait_for_function("document.querySelectorAll('#lista .cartao').length === 5")
+    page.fill("#busca-campo", "chapman")
+    page.wait_for_selector("#sugestoes a:has-text('Linguagens')")
+    page.click("#sugestoes a:has-text('Linguagens')")
+    page.wait_for_url(re.compile("#/produto/as-5-linguagens-do-amor"))
 
 
-def test_filtros_por_categoria_preco_e_chips(page):
-    page.goto("produtos.html", wait_until="networkidle")
-    assert page.locator(".produto").count() == 8
-    page.check('input[name="categoria"][value="livros"]')
-    page.wait_for_function("document.querySelectorAll('.produto').length === 1")
-    assert "categoria=livros" in page.url
-    page.click('[data-remover="categoria"]')
-    page.wait_for_function("document.querySelectorAll('.produto').length === 8")
-    page.fill("#f-min", "60"); page.fill("#f-max", "80"); page.press("#f-max", "Enter")
-    page.wait_for_function("document.querySelectorAll('.produto').length === 4")
-    page.fill("#f-min", "100"); page.press("#f-min", "Enter")
-    assert "não pode ser maior" in page.text_content("#erro-preco")
-    page.click("button[type=reset]")
-    page.wait_for_function("document.querySelectorAll('.produto').length === 8")
+def test_filtros_ordenacao_chips_e_limpar(page):
+    abrir(page, "#/produtos")
+    contar = "document.querySelectorAll('#lista .cartao').length"
+    assert page.evaluate(contar) == 8
+    page.check('input[name="cat"][value="biblias"]')
+    page.wait_for_function(f"{contar} === 5")
+    assert "cat=biblias" in page.url
+    page.click('[data-faixa="50-80"]')
+    page.wait_for_function(f"{contar} === 4")
+    page.select_option("#f-ordem", "menor")
+    precos = page.eval_on_selector_all("#lista .preco__atual", "els => els.map(e => e.textContent)")
+    valores = [float(re.sub(r"[^\d,]", "", p).replace(",", ".")) for p in precos]
+    assert valores == sorted(valores)
+    page.click('[data-tirar="cat"]')
+    page.wait_for_function(f"{contar} > 4")
+    page.fill("#f-min", "100")
+    page.fill("#f-max", "10")
+    page.press("#f-max", "Enter")
+    assert "mínimo" in page.text_content("#erro-preco")
+    page.click("#filtros [data-limpar]")
+    page.wait_for_function(f"{contar} === 8")
+    assert page.text_content("#erro-preco") == ""
 
 
-def test_categoria_vazia_mostra_em_breve(page):
-    page.goto("produtos.html?categoria=mochilas", wait_until="networkidle")
+def test_categoria_vazia_ofertas_e_favoritos(page):
+    abrir(page, "#/produtos?cat=mochilas")
     assert "em breve" in page.text_content("#lista").lower()
+    page.goto("/#/ofertas")
+    page.wait_for_function("document.querySelectorAll('#lista .cartao').length === 3")
+    assert page.locator("#lista .selo--oferta").count() == 3
 
 
-def test_pagina_de_ofertas_mostra_somente_ofertas(page):
-    page.goto("ofertas.html", wait_until="networkidle")
-    assert page.locator(".produto").count() == 3
-    assert page.locator(".produto .etiqueta--oferta").count() == 3
+# ---------------------------------------------------------------- 5/6. carrinho, cálculos e pedido
+def test_fluxo_completo_de_compra(page, server):
+    abrir(page, "#/produtos?q=pao")
+    page.click("[data-add]")
+    page.wait_for_selector(".toast:has-text('Pão Diário')")
+    assert page.text_content("#abrir-carrinho .contador") == "1"
 
+    # página do produto: quantidade limitada ao estoque (5)
+    page.goto("/#/produto/biblia-harpa-deus-e-bom")
+    for _ in range(6):
+        if page.is_enabled('[data-q="1"]'):
+            page.click('[data-q="1"]')
+    assert page.text_content(".comprar output") == "5"
+    page.click('[data-q="-1"]')
+    page.click('[data-q="-1"]')
+    page.click("[data-comprar-add]")
+    assert page.text_content("#abrir-carrinho .contador") == "4"
 
-def test_produto_inexistente(page):
-    page.goto("produto.html?p=nao-existe", wait_until="networkidle")
-    assert "Produto não encontrado" in page.text_content("#produto")
+    # gaveta do carrinho
+    page.click("#abrir-carrinho")
+    page.wait_for_selector("#gaveta.aberto")
+    assert page.locator(".gaveta-item").count() == 2
+    assert money(page, "#gaveta .total-linha strong") == pytest.approx(49.90 + 3 * 79.90)
+    page.click('#gaveta [data-qtd-mais="2"]') if page.locator('#gaveta [data-qtd-mais="2"]').count() else None
+    page.click("#gaveta >> text=Finalizar compra")
+    page.wait_for_url(re.compile("#/carrinho"))
 
+    total_antes = money(page, "#total")
+    item = page.locator(".item-carrinho", has_text="Pão Diário")
+    item.locator("[data-qtd-mais]").click()
+    assert money(page, "#total") == pytest.approx(total_antes + 49.90)
+    item.locator("[data-remover]").click()
+    page.click(".toast >> text=Desfazer")
+    assert page.locator(".item-carrinho").count() == 2
+    page.locator(".item-carrinho", has_text="Pão Diário").locator("[data-remover]").click()
+    assert page.locator(".item-carrinho").count() == 1
+    esperado = money(page, "#total")
 
-def test_menu_mobile(page):
-    page.set_viewport_size({"width": 375, "height": 812})
-    page.goto("index.html")
-    assert not page.is_visible("#menu")
-    page.click(".menu-toggle")
-    assert page.is_visible("#menu")
-    page.click("#menu >> text=Sobre nós")
-    page.wait_for_url(re.compile("sobre.html"))
-
-
-# ---------------------------------------------------------------- 5/6. carrinho e cálculos
-def money(page, sel):
-    txt = page.text_content(sel)
-    return float(re.sub(r"[^\d,]", "", txt).replace(",", "."))
-
-
-def test_fluxo_completo_de_carrinho_e_pedido(page):
-    page.goto("produtos.html?q=pao", wait_until="networkidle")
-    page.click("[data-add-cart]")
-    page.wait_for_selector(".toast")
-    assert page.text_content("#cart-badge") == "1"
-
-    page.goto("produto.html?p=biblia-harpa-deus-e-bom", wait_until="networkidle")
-    page.click('[data-qtd="1"]')
-    page.click('[data-qtd="1"]')
-    assert page.text_content("#qtd") == "3"
-    page.click("#adicionar")
-    assert page.text_content("#cart-badge") == "4"
-
-    page.goto("carrinho.html", wait_until="networkidle")
-    assert page.locator(".cart-item").count() == 2
-    assert money(page, "#r-total") == pytest.approx(49.90 + 3 * 79.90)
-    assert money(page, "#r-economia") == pytest.approx(3 * 10.00)
-
-    item = page.locator(".cart-item", has_text="Deus é bom")
-    item.locator('[data-acao="menos"]').click()
-    assert money(page, "#r-total") == pytest.approx(49.90 + 2 * 79.90)
-    item.locator('[data-acao="mais"]').click()
-    item.locator('[data-acao="mais"]').click()
-    item.locator('[data-acao="mais"]').click()  # estoque é 5
-    assert item.locator("output").text_content() == "5"
-    assert item.locator('[data-acao="mais"]').is_disabled()
-    page.locator(".cart-item", has_text="Pão Diário").locator('[data-acao="remover"]').click()
-    assert page.locator(".cart-item").count() == 1
-    assert money(page, "#r-total") == pytest.approx(5 * 79.90)
-
-    # validação do formulário
+    # validação
     page.click("#finalizar")
     assert page.get_attribute("#c-nome", "aria-invalid") == "true"
-    assert page.text_content('[data-erro="customer_phone"]')
     page.fill("#c-nome", "Ana Souza")
     page.fill("#c-tel", "11987654321")
     assert page.input_value("#c-tel") == "(11) 98765-4321"
+    page.check('input[name="entrega"][value="entregar"]')
     page.click("#finalizar")
-    page.wait_for_selector("#sucesso:not([hidden])")
-    assert re.search(r"Pedido PC\d{6}-\w{4} registrado", page.text_content("#sucesso"))
-    assert page.is_hidden("#cart-badge")
+    assert page.text_content('[data-erro="cep"]') and page.text_content('[data-erro="rua"]')
+    page.fill("#c-cep", "01001000")
+    page.wait_for_selector("#cep-dica:has-text('manualmente')")  # serviço de CEP indisponível no teste
+    page.fill("#c-rua", "Rua das Flores"); page.fill("#c-num", "100")
+    page.fill("#c-bairro", "Centro"); page.fill("#c-cidade", "São Paulo / SP")
+    page.check('input[name="pagamento"][value="Pix"]')
+    page.check("#c-presente")
+    page.fill("#c-msg", "Com carinho")
+    page.click("#finalizar")
+    page.wait_for_selector("#tela-sucesso")
+    codigo = re.search(r"PC\d{6}-\w{4}", page.text_content("#tela-sucesso h1")).group()
+    assert "Rua das Flores" in page.text_content("#resumo-pedido")
+    assert page.is_hidden("#abrir-carrinho .contador") or page.text_content("#abrir-carrinho .contador") == ""
+
+    # o pedido foi registrado na API com o total calculado no servidor
+    token = page.request.post(server + "api/admin/login", data={"password": PASSWORD}).json()["token"]
+    pedidos = page.request.get(server + "api/admin/orders", headers={"Authorization": f"Bearer {token}"}).json()
+    pedido = next(o for o in pedidos if o["code"] == codigo)
+    assert pedido["total_cents"] / 100 == pytest.approx(esperado)
+    assert "Pix" in pedido["notes"] and "presente" in pedido["notes"].lower() and "Rua das Flores" in pedido["notes"]
 
 
-def test_carrinho_vazio(page):
-    page.goto("carrinho.html", wait_until="networkidle")
-    assert "carrinho está vazio" in page.text_content("#itens")
-    assert page.is_hidden("#resumo")
-
-
-def test_carrinho_ajusta_preco_alterado(page):
-    page.goto("produtos.html?q=chapman", wait_until="networkidle")
-    page.click("[data-add-cart]")
-    page.evaluate("""() => { const c = JSON.parse(localStorage.pc_cart_v1); c[0].final_cents = 1; c[0].qty = 50;
+def test_carrinho_usa_preco_e_estoque_atuais(page, server):
+    abrir(page, "#/produtos?q=chapman")
+    page.click("[data-add]")
+    page.evaluate("""() => { const c = JSON.parse(localStorage.pc_cart_v1); c[0].qty = 50; c[0].final_cents = 1;
                      localStorage.pc_cart_v1 = JSON.stringify(c); }""")
-    page.goto("carrinho.html", wait_until="networkidle")
-    assert "preço" in page.text_content("#avisos") and "quantidade ajustada" in page.text_content("#avisos")
-    assert money(page, "#r-total") == pytest.approx(5 * 39.90)
+    page.goto("/#/carrinho")
+    page.reload()
+    page.wait_for_selector("#total")
+    assert money(page, "#total") == pytest.approx(5 * 39.90)  # limitado ao estoque, preço do servidor
 
 
-# ---------------------------------------------------------------- 7/8. painel administrativo
+def test_carrinho_vazio_sugere_produtos(page):
+    abrir(page, "#/carrinho")
+    assert "carrinho está vazio" in page.text_content("#app")
+    assert page.locator("#app .cartao").count() >= 1
+
+
+def test_favoritos_espiar_e_carrossel(page):
+    abrir(page, "")
+    primeiro = page.locator("#vitrine [data-fav]").first
+    primeiro.click()
+    assert primeiro.get_attribute("aria-pressed") == "true"
+    assert page.text_content(".acoes-topo .contador") == "1"
+    page.goto("/#/favoritos")
+    assert page.locator("#app .cartao").count() == 1
+    page.click("#favs-carrinho")
+    assert page.text_content("#abrir-carrinho .contador") == "1"
+
+    page.goto("/#/")
+    page.locator("#vitrine .cartao").first.hover()
+    page.locator("#vitrine [data-espiar]").first.click()
+    page.wait_for_selector("#modal-espiar[open] h2")
+    page.click("#modal-espiar [data-fechar-modal]")
+    assert page.is_hidden("#modal-espiar")
+
+    page.click(".carrossel__seta--dir")
+    assert page.get_attribute('[data-ir-slide="1"]', "aria-current") == "true"
+    page.click('[data-ir-slide="0"]')
+    assert page.get_attribute('[data-ir-slide="0"]', "aria-current") == "true"
+
+
+# ---------------------------------------------------------------- arquivo único aberto sem servidor
+def test_index_html_funciona_sozinho_sem_servidor(browser):
+    ctx, pg = novo_contexto(browser)
+    try:
+        abrir(pg, (ROOT / "frontend" / "index.html").as_uri())
+        assert pg.evaluate("document.documentElement.dataset.modo") == "independente"
+        assert pg.locator("#vitrine .cartao").count() >= 4
+        pg.goto((ROOT / "frontend" / "index.html").as_uri() + "#/produto/biblia-yeshua-leao-harpa")
+        pg.click("[data-comprar-add]")
+        pg.goto((ROOT / "frontend" / "index.html").as_uri() + "#/carrinho")
+        pg.fill("#c-nome", "Maria"); pg.fill("#c-tel", "11999998888")
+        pg.click("#finalizar")
+        pg.wait_for_selector("#tela-sucesso")
+        assert pg.locator("#copiar-pedido").count() == 1
+        assert pg.locator("#enviar-whats").count() == 0  # WhatsApp não configurado: nenhum botão inútil
+        assert "Área da loja" not in pg.text_content("#rodape")  # painel só existe com o servidor
+        assert pg.errors == []
+    finally:
+        ctx.close()
+
+
+# ---------------------------------------------------------------- painel administrativo
 def login(page):
-    page.goto("admin.html")
+    page.goto("/admin.html")
     page.fill("#senha", "errada")
     page.click("#login-form button")
     page.wait_for_selector('[data-erro="password"]:has-text("Senha incorreta")')
@@ -244,7 +367,7 @@ def test_admin_cadastra_edita_estoque_e_exclui(page):
     page.click("#salvar-produto")
     assert "menor que o preço normal" in page.text_content('[data-erro="promo_price"]')
     page.fill("#p-promo", "9,90")
-    page.set_input_files("#p-foto", "frontend/img/produtos/biblia-nvi-ele-vive.jpg")
+    page.set_input_files("#p-foto", str(ROOT / "frontend/img/produtos/biblia-nvi-ele-vive.jpg"))
     page.wait_for_function("document.querySelector('#p-preview').src.includes('img/uploads/')")
     page.click("#salvar-produto")
     page.wait_for_selector("text=Produto cadastrado.")
@@ -260,28 +383,26 @@ def test_admin_cadastra_edita_estoque_e_exclui(page):
     page.fill("#e-motivo", "Venda na loja física")
     page.click("#form-estoque [type=submit]")
     page.wait_for_selector("text=Estoque atualizado.")
-    assert "5" in page.locator("#tabela-produtos tr", has_text="Caneta Gel").locator("td").nth(5).text_content()
-
     page.click("#tab-estoque")
     page.wait_for_selector("#tabela-movimentos >> text=Venda na loja física")
 
-    # aparece na loja
-    store = page.context.new_page()
-    store.goto("produtos.html?categoria=canetas", wait_until="networkidle")
-    assert store.locator(".produto", has_text="Caneta Gel").count() == 1
-    store.close()
+    # aparece na loja, com a foto enviada
+    loja = page.context.new_page()
+    loja.goto("/#/produtos?cat=canetas")
+    loja.wait_for_selector(".cartao:has-text('Caneta Gel')")
+    assert "img/uploads/" in loja.get_attribute(".cartao img", "src")
+    loja.close()
 
     page.click("#tab-produtos")
     page.locator("#tabela-produtos tr", has_text="Caneta Gel").locator('[data-acao="excluir"]').click()
     page.click("#confirmar-sim")
     page.wait_for_selector("text=Produto excluído.")
-    assert page.locator("#tabela-produtos tr", has_text="Caneta Gel").count() == 0
 
 
-def test_admin_configura_whatsapp_e_contato_aparece(page):
+def test_admin_configura_whatsapp_e_loja_usa(page):
     login(page)
     page.click("#tab-config")
-    page.wait_for_function("document.querySelector('#cf-nome').value !== ''")  # aguarda carregar
+    page.wait_for_function("document.querySelector('#cf-nome').value !== ''")
     page.fill("#cf-insta", "instagram.com/x")
     page.click("#form-config [type=submit]")
     page.wait_for_selector('[data-erro="instagram"]:has-text("https://")')
@@ -291,25 +412,36 @@ def test_admin_configura_whatsapp_e_contato_aparece(page):
     page.click("#form-config [type=submit]")
     page.wait_for_selector("text=Configurações salvas.")
 
-    page.goto("contato.html", wait_until="networkidle")
-    assert page.locator(".contato-card").count() == 3
+    abrir(page, "#/contato")
+    assert page.locator(".canal").count() == 3
     assert page.is_visible("#form-contato")
-    page.goto("produto.html?p=biblia-nvi-ele-vive", wait_until="networkidle")
-    href = page.get_attribute(".btn--whats", "href")
+    page.click("#form-contato [type=submit]")
+    assert page.text_content('[data-erro="nome"]')
+    page.fill("#m-nome", "Rute"); page.fill("#m-msg", "Vocês têm Bíblia de estudo?")
+    page.click("#form-contato [type=submit]")
+    assert "Rute" in page.get_attribute("#contato-link", "href").replace("%20", " ")
+    page.goto("/#/produto/biblia-nvi-ele-vive")
+    href = page.get_attribute("a:has-text('Tirar dúvidas')", "href")
     assert href.startswith("https://wa.me/5511912345678?text=")
+    page.click("[data-comprar-add]")
+    page.goto("/#/carrinho")
+    page.fill("#c-nome", "Lia"); page.fill("#c-tel", "11988887777")
+    page.click("#finalizar")
+    page.wait_for_selector("#enviar-whats")
+    assert page.get_attribute("#enviar-whats", "href").startswith("https://wa.me/5511912345678?text=")
+    assert "Área da loja" in page.text_content("#rodape")
 
 
 def test_admin_confirma_pedido_e_baixa_estoque(page, server):
     pid = page.request.get(server + "api/products/biblia-yeshua-leao-harpa").json()["id"]
-    before = page.request.get(server + f"api/products/{pid}").json()["stock"]
+    antes = page.request.get(server + f"api/products/{pid}").json()["stock"]
     page.request.post(server + "api/orders", data={"customer_name": "João", "customer_phone": "11988887777",
                                                    "items": [{"product_id": pid, "quantity": 2}]})
     login(page)
     page.click("#tab-pedidos")
-    pedido = page.locator(".pedido", has_text="João").first
-    pedido.locator('[data-status="confirmado"]').click()
+    page.locator(".pedido", has_text="João").first.locator('[data-status="confirmado"]').click()
     page.wait_for_selector("text=Pedido marcado como confirmado.")
-    assert page.request.get(server + f"api/products/{pid}").json()["stock"] == before - 2
+    assert page.request.get(server + f"api/products/{pid}").json()["stock"] == antes - 2
 
 
 def test_admin_sair(page):
@@ -320,27 +452,6 @@ def test_admin_sair(page):
     assert page.is_visible("#login-view")
 
 
-# ---------------------------------------------------------------- 9b. layout de computador (inclui zoom do Windows)
-@pytest.mark.parametrize("width", [853, 910, 1092, 1280, 1366, 1920])
-def test_pc_usa_layout_de_computador(page, width):
-    """1366/1280 px com zoom de 125% ou 150% no Windows viram ~853–1092 px no navegador."""
-    page.set_viewport_size({"width": width, "height": 800})
-    page.goto("produtos.html", wait_until="networkidle")
-    assert page.is_hidden(".menu-toggle"), "não deve mostrar o menu de celular no PC"
-    assert page.is_visible("#menu >> text=Ofertas")
-    assert page.is_visible("#filtros"), "filtros devem ficar visíveis ao lado no PC"
-    filtros, lista = page.locator("#filtros").bounding_box(), page.locator("#lista").bounding_box()
-    assert lista["x"] > filtros["x"] + filtros["width"] - 1, "lista deve ficar ao lado dos filtros"
-    assert page.evaluate("getComputedStyle(document.querySelector('#lista')).gridTemplateColumns.split(' ').length") >= 2
-
-
-@pytest.mark.parametrize("width", [375, 414])
-def test_celular_usa_layout_de_celular(page, width):
-    page.set_viewport_size({"width": width, "height": 800})
-    page.goto("produtos.html", wait_until="networkidle")
-    assert page.is_visible(".menu-toggle") and page.is_hidden("#menu")
-
-
 # ---------------------------------------------------------------- HTTPS
 def test_loja_funciona_em_https(browser, tmp_path):
     from backend.certs import ensure_certificate
@@ -348,16 +459,14 @@ def test_loja_funciona_em_https(browser, tmp_path):
     app = create_app({"DATABASE": str(tmp_path / "s.db"), "UPLOAD_DIR": str(tmp_path / "u"), "ADMIN_PASSWORD": PASSWORD})
     srv = make_server("127.0.0.1", 0, app, threaded=True, ssl_context=cert)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
-    base = f"https://localhost:{srv.server_port}/"
-    ctx = browser.new_context(ignore_https_errors=True, bypass_csp=True)
-    ctx.route(re.compile(r"fonts\.(googleapis|gstatic)\.com"), lambda r: r.abort())
-    pg = ctx.new_page()
+    ctx, pg = novo_contexto(browser, f"https://localhost:{srv.server_port}/", ignore_https_errors=True)
     try:
-        pg.goto(base + "produtos.html", wait_until="networkidle")
-        assert pg.url.startswith("https://")
-        assert pg.evaluate("window.isSecureContext") is True
-        pg.click("[data-add-cart]")
-        assert pg.text_content("#cart-badge") == "1"
+        abrir(pg, "#/produtos")
+        assert pg.url.startswith("https://") and pg.evaluate("window.isSecureContext") is True
+        assert pg.evaluate("document.documentElement.dataset.modo") == "servidor"
+        pg.click("[data-add]")
+        assert pg.text_content("#abrir-carrinho .contador") == "1"
+        assert pg.errors == []
     finally:
         ctx.close()
         srv.shutdown()

@@ -61,7 +61,7 @@ Dados públicos da loja: `store_name, whatsapp, phone, email, address, hours, in
 ```
 Resposta `201`: pedido com `code`, `total_cents` (calculado no servidor), `items`, `status: "pendente"` e
 `whatsapp_url` (link com a mensagem pronta, ou `null` se o WhatsApp da loja não estiver configurado).
-Valida estoque e disponibilidade. Limite: 20 pedidos / 10 min por IP.
+Valida estoque e disponibilidade. `notes` aceita até 1000 caracteres (a loja envia entrega, pagamento e presente aqui). Limite: 20 pedidos / 10 min por IP.
 
 ## Administrativas
 

@@ -291,7 +291,7 @@ def create_order(payload):
     errors = {}
     name = clean_str(payload.get("customer_name"), "customer_name", errors, min_len=2, max_len=80)
     phone = clean_phone(payload.get("customer_phone"), "customer_phone", errors)
-    notes = clean_str(payload.get("notes"), "notes", errors, max_len=500, required=False)
+    notes = clean_str(payload.get("notes"), "notes", errors, max_len=1000, required=False)
     items = payload.get("items")
     if not isinstance(items, list) or not items:
         errors["items"] = "O carrinho está vazio."
