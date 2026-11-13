@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Painel administrativo | Papelaria Cristã</title>
+  <meta name="description" content="Área administrativa da Papelaria Cristã.">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#7e5bb3">
+  <link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Nunito:wght@400;600;700;800&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+  <script type="module" src="js/pages/admin.js"></script>
+</head>
+<body data-page="admin">
+  <main id="conteudo" class="container">
+
+    <!-- Login -->
+    <section class="admin-login cartao" id="login-view" hidden aria-labelledby="login-titulo">
+      <h1 id="login-titulo">Painel da loja</h1>
+      <p class="dica">Acesso restrito à administração da Papelaria Cristã.</p>
+      <form id="login-form" novalidate>
+        <div class="campo">
+          <label for="senha">Senha</label>
+          <input id="senha" name="password" type="password" autocomplete="current-password" required>
+          <span class="erro" data-erro="password" role="alert"></span>
+        </div>
+        <button class="btn btn--bloco" type="submit">Entrar</button>
+      </form>
+    </section>
+
+    <!-- Painel -->
+    <section id="painel" hidden aria-labelledby="painel-titulo">
+      <div class="admin-topo">
+        <h1 id="painel-titulo">Painel administrativo</h1>
+        <div class="hero__acoes">
+          <a class="btn btn--claro btn--sm" href="index.html" target="_blank" rel="noopener">Ver loja ↗</a>
+          <button class="btn btn--claro btn--sm" type="button" id="sair">Sair</button>
+        </div>
+      </div>
+
+      <div class="abas" role="tablist" aria-label="Seções do painel">
+        <button class="aba" role="tab" id="tab-resumo" aria-controls="aba-resumo" aria-selected="true">Visão geral</button>
+        <button class="aba" role="tab" id="tab-produtos" aria-controls="aba-produtos" aria-selected="false" tabindex="-1">Produtos</button>
+        <button class="aba" role="tab" id="tab-estoque" aria-controls="aba-estoque" aria-selected="false" tabindex="-1">Estoque</button>
+        <button class="aba" role="tab" id="tab-pedidos" aria-controls="aba-pedidos" aria-selected="false" tabindex="-1">Pedidos</button>
+        <button class="aba" role="tab" id="tab-config" aria-controls="aba-config" aria-selected="false" tabindex="-1">Configurações</button>
+      </div>
+
+      <div role="tabpanel" id="aba-resumo" aria-labelledby="tab-resumo">
+        <div id="avisos-admin"></div>
+        <div class="metricas" id="metricas"></div>
+      </div>
+
+      <div role="tabpanel" id="aba-produtos" aria-labelledby="tab-produtos" hidden>
+        <div class="barra-ferramentas">
+          <label class="sr-only" for="busca-admin">Buscar produto</label>
+          <input class="input" id="busca-admin" type="search" placeholder="Buscar produto…">
+          <label class="check"><input type="checkbox" id="so-baixo"> Somente estoque baixo</label>
+          <button class="btn" type="button" id="novo-produto">+ Novo produto</button>
+        </div>
+        <div class="tabela-wrap">
+          <table class="tabela">
+            <caption class="sr-only">Produtos cadastrados</caption>
+            <thead><tr><th>Foto</th><th>Produto</th><th>Categoria</th><th>Preço</th><th>Promoção</th><th>Estoque</th><th>Status</th><th>Ações</th></tr></thead>
+            <tbody id="tabela-produtos"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div role="tabpanel" id="aba-estoque" aria-labelledby="tab-estoque" hidden>
+        <p class="dica">Todas as entradas e saídas ficam registradas. A baixa automática acontece quando um pedido é confirmado.</p>
+        <div class="tabela-wrap">
+          <table class="tabela">
+            <caption class="sr-only">Movimentações de estoque</caption>
+            <thead><tr><th>Data</th><th>Produto</th><th>Movimento</th><th>Estoque após</th><th>Motivo</th></tr></thead>
+            <tbody id="tabela-movimentos"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div role="tabpanel" id="aba-pedidos" aria-labelledby="tab-pedidos" hidden>
+        <div class="barra-ferramentas">
+          <label class="sr-only" for="filtro-status">Filtrar por status</label>
+          <select class="select" id="filtro-status">
+            <option value="">Todos os pedidos</option>
+            <option value="pendente">Pendentes</option>
+            <option value="confirmado">Confirmados</option>
+            <option value="enviado">Enviados</option>
+            <option value="concluido">Concluídos</option>
+            <option value="cancelado">Cancelados</option>
+          </select>
+        </div>
+        <div id="lista-pedidos"></div>
+      </div>
+
+      <div role="tabpanel" id="aba-config" aria-labelledby="tab-config" hidden>
+        <form class="cartao" id="form-config" novalidate>
+          <h2>Dados da loja</h2>
+          <p class="dica">Estas informações aparecem no rodapé, na página de contato e nos botões de WhatsApp. Deixe em branco o que não quiser exibir.</p>
+          <div class="grid-2">
+            <div class="campo"><label for="cf-nome">Nome da loja</label><input id="cf-nome" name="store_name" maxlength="80" required><span class="erro" data-erro="store_name"></span></div>
+            <div class="campo"><label for="cf-whats">WhatsApp da loja</label><input id="cf-whats" name="whatsapp" inputmode="tel" placeholder="55 + DDD + número, ex.: 5511987654321"><span class="dica">Necessário para os botões de compra pelo WhatsApp.</span><span class="erro" data-erro="whatsapp"></span></div>
+            <div class="campo"><label for="cf-tel">Telefone</label><input id="cf-tel" name="phone" maxlength="40"><span class="erro" data-erro="phone"></span></div>
+            <div class="campo"><label for="cf-email">E-mail</label><input id="cf-email" name="email" type="email" maxlength="120"><span class="erro" data-erro="email"></span></div>
+            <div class="campo"><label for="cf-end">Endereço</label><input id="cf-end" name="address" maxlength="200"><span class="erro" data-erro="address"></span></div>
+            <div class="campo"><label for="cf-hor">Horário de atendimento</label><input id="cf-hor" name="hours" maxlength="120" placeholder="Ex.: Seg. a sáb., 9h às 18h"><span class="erro" data-erro="hours"></span></div>
+            <div class="campo"><label for="cf-insta">Instagram (link)</label><input id="cf-insta" name="instagram" type="url" placeholder="https://instagram.com/sualoja"><span class="erro" data-erro="instagram"></span></div>
+            <div class="campo"><label for="cf-face">Facebook (link)</label><input id="cf-face" name="facebook" type="url" placeholder="https://facebook.com/sualoja"><span class="erro" data-erro="facebook"></span></div>
+          </div>
+          <button class="btn" type="submit">Salvar configurações</button>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <!-- Diálogo: produto -->
+  <dialog id="dlg-produto" aria-labelledby="dlg-produto-titulo">
+    <form id="form-produto" novalidate>
+      <div class="dialogo__topo"><h2 id="dlg-produto-titulo">Novo produto</h2><button class="icon-btn" type="button" data-fechar aria-label="Fechar">✕</button></div>
+      <div class="dialogo__corpo">
+        <div class="campo"><label for="p-nome">Nome</label><input id="p-nome" name="name" maxlength="120" required><span class="erro" data-erro="name"></span></div>
+        <div class="grid-2">
+          <div class="campo"><label for="p-cat">Categoria</label><select id="p-cat" name="category" required></select><span class="erro" data-erro="category"></span></div>
+          <div class="campo"><label for="p-estoque">Estoque</label><input id="p-estoque" name="stock" type="number" min="0" step="1" required><span class="erro" data-erro="stock"></span></div>
+          <div class="campo"><label for="p-preco">Preço (R$)</label><input id="p-preco" name="price" inputmode="decimal" placeholder="0,00" required><span class="erro" data-erro="price"></span></div>
+          <div class="campo"><label for="p-promo">Preço promocional (R$)</label><input id="p-promo" name="promo_price" inputmode="decimal" placeholder="Opcional"><span class="erro" data-erro="promo_price"></span></div>
+        </div>
+        <div class="campo"><label for="p-desc">Descrição</label><textarea id="p-desc" name="description" maxlength="2000"></textarea><span class="erro" data-erro="description"></span></div>
+        <div class="campo">
+          <label for="p-foto">Foto</label>
+          <div class="barra-ferramentas">
+            <img class="preview-img" id="p-preview" src="img/sem-foto.svg" alt="Pré-visualização da foto">
+            <div>
+              <input id="p-foto" type="file" accept="image/jpeg,image/png,image/webp">
+              <p class="dica">JPG, PNG ou WEBP, até 5 MB. Prefira fotos verticais (4:5).</p>
+            </div>
+          </div>
+          <input type="hidden" name="image">
+          <span class="erro" data-erro="image"></span>
+        </div>
+        <label class="check"><input type="checkbox" name="featured"> Mostrar em “Destaques”</label>
+        <label class="check"><input type="checkbox" name="active" checked> Visível na loja</label>
+      </div>
+      <div class="dialogo__rodape">
+        <button class="btn btn--claro" type="button" data-fechar>Cancelar</button>
+        <button class="btn" type="submit" id="salvar-produto">Salvar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Diálogo: estoque -->
+  <dialog id="dlg-estoque" aria-labelledby="dlg-estoque-titulo">
+    <form id="form-estoque" novalidate>
+      <div class="dialogo__topo"><h2 id="dlg-estoque-titulo">Ajustar estoque</h2><button class="icon-btn" type="button" data-fechar aria-label="Fechar">✕</button></div>
+      <div class="dialogo__corpo">
+        <p id="estoque-info"></p>
+        <div class="grid-2">
+          <div class="campo">
+            <label for="e-tipo">Tipo</label>
+            <select id="e-tipo" name="tipo"><option value="1">Entrada (+)</option><option value="-1">Saída (−)</option></select>
+          </div>
+          <div class="campo"><label for="e-qtd">Quantidade</label><input id="e-qtd" name="delta" type="number" min="1" step="1" value="1" required><span class="erro" data-erro="delta"></span></div>
+        </div>
+        <div class="campo"><label for="e-motivo">Motivo</label><input id="e-motivo" name="reason" maxlength="120" placeholder="Ex.: reposição do fornecedor, venda na loja física…"><span class="erro" data-erro="reason"></span></div>
+      </div>
+      <div class="dialogo__rodape">
+        <button class="btn btn--claro" type="button" data-fechar>Cancelar</button>
+        <button class="btn" type="submit">Confirmar ajuste</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Diálogo: confirmação -->
+  <dialog id="dlg-confirmar" aria-labelledby="dlg-confirmar-titulo">
+    <div class="dialogo__topo"><h2 id="dlg-confirmar-titulo">Confirmar</h2></div>
+    <div class="dialogo__corpo"><p id="confirmar-texto"></p></div>
+    <div class="dialogo__rodape">
+      <button class="btn btn--claro" type="button" data-fechar>Cancelar</button>
+      <button class="btn btn--perigo" type="button" id="confirmar-sim">Confirmar</button>
+    </div>
+  </dialog>
+</body>
+</html>

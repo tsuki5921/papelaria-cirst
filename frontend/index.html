@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Papelaria Cristã | Bíblias, devocionais, livros e presentes cristãos</title>
+  <meta name="description" content="Papelaria Cristã: Bíblias, devocionais, livros cristãos, kits de presente e papelaria com propósito. Monte seu pedido e finalize pelo WhatsApp.">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Papelaria Cristã">
+  <meta property="og:description" content="Bíblias, devocionais, livros e presentes que inspiram fé.">
+  <meta property="og:image" content="img/produtos/biblia-letra-gigante-harpa-pink.jpg">
+  <meta name="theme-color" content="#7e5bb3">
+  <link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Nunito:wght@400;600;700;800&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+  <script type="module" src="js/pages/home.js"></script>
+</head>
+<body data-page="inicio">
+  <main id="conteudo">
+    <section class="hero" aria-labelledby="hero-titulo">
+      <svg class="ornamento ornamento--hero" viewBox="0 0 100 100" aria-hidden="true"><path d="M50 5c8 18 8 30 0 45-8-15-8-27 0-45zM50 95c-8-18-8-30 0-45 8 15 8 27 0 45zM5 50c18-8 30-8 45 0-15 8-27 8-45 0zM95 50c-18 8-30 8-45 0 15-8 27-8 45 0z" fill="currentColor"/></svg>
+      <div class="container hero__grid">
+        <div>
+          <span class="selo">✿ Papelaria com propósito</span>
+          <h1 id="hero-titulo">Presentes e papelaria que <em>falam ao coração</em></h1>
+          <p class="hero__texto">Bíblias, devocionais, livros cristãos e kits de presente escolhidos com carinho para acompanhar sua fé no dia a dia — e para abençoar quem você ama.</p>
+          <div class="hero__acoes">
+            <a class="btn" href="produtos.html">Ver produtos</a>
+            <a class="btn btn--claro" href="ofertas.html">Ofertas da semana</a>
+          </div>
+          <blockquote class="hero__versiculo">
+            “Darei a vocês um coração novo e porei um espírito novo em vocês.”
+            <cite>Ezequiel 36:26</cite>
+          </blockquote>
+        </div>
+        <div class="hero__galeria" id="hero-galeria" aria-label="Produtos em destaque"></div>
+      </div>
+    </section>
+
+    <div class="container" id="faixa-promo" hidden></div>
+
+    <section class="secao" aria-labelledby="cat-titulo">
+      <div class="container">
+        <div class="secao__topo">
+          <div>
+            <h2 class="secao__titulo" id="cat-titulo">Categorias</h2>
+            <p>Encontre o que você procura com facilidade.</p>
+          </div>
+          <a class="btn btn--claro btn--sm" href="produtos.html">Ver tudo</a>
+        </div>
+        <div class="categorias" id="categorias"></div>
+      </div>
+    </section>
+
+    <section class="secao secao--colada" aria-labelledby="dest-titulo">
+      <div class="container">
+        <div class="secao__topo">
+          <div>
+            <h2 class="secao__titulo" id="dest-titulo">Destaques</h2>
+            <p>Os queridinhos da Papelaria Cristã.</p>
+          </div>
+          <a class="btn btn--claro btn--sm" href="produtos.html">Ver catálogo</a>
+        </div>
+        <div class="grade" id="destaques">
+          <div class="esqueleto"></div><div class="esqueleto"></div><div class="esqueleto"></div><div class="esqueleto"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="secao secao--colada" aria-labelledby="of-titulo" id="secao-ofertas" data-x>
+      <div class="container">
+        <div class="secao__topo">
+          <div>
+            <h2 class="secao__titulo" id="of-titulo">Ofertas</h2>
+            <p>Preços especiais por tempo limitado.</p>
+          </div>
+          <a class="btn btn--claro btn--sm" href="ofertas.html">Todas as ofertas</a>
+        </div>
+        <div class="grade" id="ofertas"></div>
+      </div>
+    </section>
+
+    <section class="secao secao--colada" aria-labelledby="val-titulo">
+      <div class="container">
+        <h2 class="secao__titulo sr-only" id="val-titulo">Por que comprar conosco</h2>
+        <div class="valores">
+          <div class="valor"><div class="valor__icone" aria-hidden="true">🕊</div><h3>Feito com fé</h3><p>Produtos que inspiram momentos de oração, leitura e gratidão.</p></div>
+          <div class="valor"><div class="valor__icone" aria-hidden="true">🎁</div><h3>Ideal para presentear</h3><p>Bíblias e kits pensados para aniversários, batismos e datas especiais.</p></div>
+          <div class="valor"><div class="valor__icone" aria-hidden="true">💬</div><h3>Pedido simples</h3><p>Monte seu carrinho e finalize falando direto com a loja.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="container" aria-label="Versículo">
+      <div class="versiculo-banner">
+        <blockquote>“Lâmpada para os meus pés é a tua palavra, e luz para o meu caminho.”<cite>Salmos 119:105</cite></blockquote>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

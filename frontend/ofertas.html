@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ofertas | Papelaria Cristã</title>
+  <meta name="description" content="Ofertas da Papelaria Cristã: Bíblias, livros e presentes cristãos com preços especiais.">
+  <meta property="og:title" content="Ofertas | Papelaria Cristã">
+  <meta property="og:description" content="Bíblias, devocionais, livros e presentes que inspiram fé.">
+  <meta name="theme-color" content="#7e5bb3">
+  <link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Nunito:wght@400;600;700;800&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+  <script type="module" src="js/pages/catalog.js"></script>
+</head>
+<body data-page="ofertas" data-modo="ofertas">
+  <main id="conteudo" class="container">
+    <div class="pagina-topo">
+      <nav class="migalhas" aria-label="Você está em">
+        <ol><li><a href="index.html">Início</a></li><li aria-current="page" id="migalha-atual">Ofertas</li></ol>
+      </nav>
+      <h1 id="titulo-pagina">Ofertas especiais</h1>
+    </div>
+
+    <div class="catalogo">
+      <div>
+        <button class="btn btn--claro btn--bloco filtros-toggle" type="button" aria-expanded="false" aria-controls="filtros">☰ Filtrar e ordenar</button>
+        <form class="filtros" id="filtros" aria-label="Filtros">
+          <h2>Filtrar</h2>
+          <div class="filtro">
+            <label for="f-busca">Buscar</label>
+            <input id="f-busca" name="q" type="search" maxlength="80" placeholder="Nome do produto…" autocomplete="off">
+          </div>
+          <fieldset class="filtro">
+            <legend>Categoria</legend>
+            <div id="f-categorias"></div>
+          </fieldset>
+          <fieldset class="filtro">
+            <legend>Preço (R$)</legend>
+            <div class="faixa-preco">
+              <label class="sr-only" for="f-min">Preço mínimo</label>
+              <input id="f-min" name="min" type="number" min="0" step="1" inputmode="decimal" placeholder="Mín.">
+              <label class="sr-only" for="f-max">Preço máximo</label>
+              <input id="f-max" name="max" type="number" min="0" step="1" inputmode="decimal" placeholder="Máx.">
+            </div>
+            <p class="campo"><span class="erro" id="erro-preco" role="alert"></span></p>
+          </fieldset>
+          <fieldset class="filtro">
+            <legend>Mostrar</legend>
+                        <label class="opcao"><input type="checkbox" name="estoque"> Somente disponíveis</label>
+          </fieldset>
+          <div class="filtro">
+            <label for="f-ordem">Ordenar por</label>
+            <select id="f-ordem" name="ordem">
+              <option value="">Relevância</option>
+              <option value="price_asc">Menor preço</option>
+              <option value="price_desc">Maior preço</option>
+              <option value="name">Nome (A–Z)</option>
+              <option value="newest">Mais recentes</option>
+            </select>
+          </div>
+          <button class="btn btn--claro btn--bloco" type="reset">Limpar filtros</button>
+        </form>
+      </div>
+
+      <section aria-labelledby="titulo-pagina">
+        <div class="resultado-topo">
+          <p id="contagem" aria-live="polite">Carregando…</p>
+          <div class="chips" id="chips"></div>
+        </div>
+        <div class="grade" id="lista">
+          <div class="esqueleto"></div><div class="esqueleto"></div><div class="esqueleto"></div>
+        </div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>
