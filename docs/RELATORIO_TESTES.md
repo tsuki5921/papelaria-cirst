@@ -1,6 +1,6 @@
 # Relatório de testes — Papelaria Cristã
 
-**Data:** 12/11/2026  ·  **Resultado final: 61 de 61 testes aprovados** (34 de API + 27 no navegador)
+**Data:** 12/11/2026  ·  **Resultado final: 63 de 63 testes aprovados** (36 de API + 27 no navegador)
 **Ambiente:** Python 3.13, Flask 3.1, Google Chrome (via Playwright), Linux.
 
 ```bash
@@ -20,7 +20,7 @@ pytest -v      # reproduz todos os testes
 | 7 | Cadastro de produtos | No painel: validação, promoção ≥ preço rejeitada, upload de foto, cadastro, aparece na loja, ajuste de estoque, exclusão. Na API: criar/editar/ocultar/excluir, slug único, validações, upload só aceita imagens reais | ✅ |
 | 8 | API Python | 33 testes: catálogo, pedidos, autenticação, estoque, transições de pedido, configurações, upload, cabeçalhos de segurança | ✅ |
 | 9 | Responsividade | Todas as páginas em **375 px, 768 px e 1366 px**, sem rolagem horizontal; **layout de PC verificado em 853, 910, 1092, 1280, 1366 e 1920 px** (inclui notebooks com zoom de 125%/150% do Windows): menu completo e filtros ao lado da lista; celular (375/414 px) com menu recolhível | ✅ (após correção) |
-| 10 | Corrigir erros | 7 problemas encontrados e corrigidos (seção 3); suíte completa reexecutada após cada correção | ✅ |
+| 10 | Corrigir erros | 9 problemas encontrados e corrigidos (seção 3); suíte completa reexecutada após cada correção | ✅ |
 
 ## 2. Testes de segurança incluídos
 
@@ -52,6 +52,8 @@ pytest -v      # reproduz todos os testes
 | 5 | Catálogo (JS) | **“Limpar filtros” não funcionava** (evento de reset cancelado) | Reset do navegador + nova busca | `test_filtros_por_categoria_preco_e_chips` (falhava, passou a passar) |
 | 6 | Painel (JS) | Configurações podiam ser editadas antes de carregar e eram sobrescritas | Formulário inativo até carregar | `test_admin_configura_whatsapp...` |
 | 7 | CSS | **Em PCs com zoom do Windows (125%/150%) a loja aparecia no layout de celular** (relatado pelo cliente) | Layout de PC a partir de 760 px; menu em segunda linha entre 760 e 1180 px; conteúdo mais largo em telas Full HD | `test_pc_usa_layout_de_computador` (6 larguras) |
+| 8 | Inicialização | **“localhost recusou a conexão”** (relatado pelo cliente): servidor não iniciava ou fechava sem explicar; porta ocupada; celular sem acesso | `iniciar-windows.bat` (dois cliques), mensagens de erro claras, próxima porta livre automática, modo `--rede` para celular com certificado válido para o IP da rede, navegador abre sozinho | Testado: porta 5000 ocupada → 5001; acesso pelo IP da rede em HTTPS com certificado verificado; `test_inicializacao_usa_proxima_porta_livre` |
+| 9 | Inicialização | Sem o pacote `cryptography`, a loja fechava em vez de abrir sem HTTPS | Volta para HTTP com aviso | Simulação sem o pacote |
 
 ## 4. Limitações conhecidas (não são erros)
 
@@ -64,7 +66,7 @@ pytest -v      # reproduz todos os testes
 ## 5. Saída da última execução
 
 ```
-tests/test_api.py .................................. 34 passed
+tests/test_api.py .................................... 36 passed
 tests/test_e2e.py ........................... 27 passed
-============================= 61 passed in 57.58s ==============================
+============================= 63 passed in 58.49s ==============================
 ```

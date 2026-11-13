@@ -288,3 +288,28 @@ def test_certificado_https_gerado_e_reaproveitado(tmp_path):
     conteudo = open(cert).read()
     assert "BEGIN CERTIFICATE" in conteudo and "PRIVATE KEY" in open(key).read()
     assert ensure_certificate(tmp_path) == (cert, key) and open(cert).read() == conteudo
+
+
+def test_certificado_inclui_ip_da_rede_e_respeita_certificado_proprio(tmp_path):
+    from cryptography import x509
+
+    from backend.certs import ensure_certificate
+    cert, _ = ensure_certificate(tmp_path, extra_ips=["192.168.0.10"])
+    san = x509.load_pem_x509_certificate(open(cert, "rb").read()).extensions.get_extension_for_class(
+        x509.SubjectAlternativeName).value
+    assert "192.168.0.10" in [str(ip) for ip in san.get_values_for_type(x509.IPAddress)]
+    # certificado próprio (ex.: mkcert, sem o arquivo de controle) nunca é sobrescrito
+    (tmp_path / "gerado-automaticamente.txt").unlink()
+    antes = open(cert).read()
+    ensure_certificate(tmp_path, extra_ips=["10.0.0.5"])
+    assert open(cert).read() == antes
+
+
+def test_inicializacao_usa_proxima_porta_livre():
+    import socket
+
+    import run
+    with socket.socket() as ocupada:
+        ocupada.bind(("127.0.0.1", 0))
+        ocupada.listen()
+        assert run.port_free("127.0.0.1", ocupada.getsockname()[1]) is False
