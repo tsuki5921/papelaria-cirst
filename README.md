@@ -4,6 +4,12 @@ Loja virtual da **Papelaria Cristã**: Bíblias, devocionais, livros cristãos, 
 Tem catálogo com busca e filtros, carrinho, finalização do pedido pelo WhatsApp, painel administrativo
 com cadastro de produtos, controle de estoque e gestão de pedidos, além de testes automatizados.
 
+<p align="center">
+  <img src="docs/imagens/loja-pc.jpg" alt="Loja no computador" width="68%">
+  <img src="docs/imagens/loja-celular.jpg" alt="Loja no celular" width="26%">
+</p>
+<p align="center"><img src="docs/imagens/animacoes.gif" alt="Animações: adicionar ao carrinho, favoritar e confete ao concluir o pedido" width="80%"></p>
+
 ---
 
 ## ⭐ A loja em um único arquivo: `frontend/index.html`
