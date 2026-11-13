@@ -25,7 +25,13 @@ sugestões enquanto digita (atalho `/`), filtros por categoria, preço, ofertas,
 ordenação, página de produto com zoom na foto, "espiar" produto sem sair da página, favoritos, gaveta do
 carrinho com desfazer, produtos vistos recentemente, checkout em 5 etapas (dados, retirada ou entrega com
 CEP automático, pagamento preferido, presente com mensagem do cartão, observações), barra de atalhos no
-celular, versículo do dia e animações suaves (desligadas para quem prefere menos movimento).
+celular e versículo do dia.
+
+**Animações:** produto voando até o carrinho, corações ao favoritar, ondulação nos botões, pétalas
+caindo e texto entrando no banner, profundidade nas fotos ao mover o mouse, barra de progresso da página,
+total do carrinho contando, ✓ desenhado e confete de pétalas ao concluir o pedido, itens entrando em
+sequência e esqueleto de carregamento. Tudo é desligado automaticamente para quem configurou o aparelho
+para reduzir movimento.
 
 **Para editar o visual ou o código da loja**, altere `frontend/loja/` (`loja.css`, `loja.js`,
 `index.template.html`) e gere o arquivo de novo:
@@ -86,23 +92,36 @@ Acesse **https://localhost:5000/admin.html** com ela. Para definir a sua própri
 python -m backend.manage senha
 ```
 
-### HTTPS no seu computador
+### HTTPS no seu computador (sem o aviso "Sua conexão não é particular")
 
-A loja já inicia em **HTTPS**. Na primeira execução é criado um certificado em `data/certs/`.
-Como ele é gerado no seu próprio PC (autoassinado), o navegador mostra um aviso **uma vez**:
-clique em **Avançado › Continuar para localhost**. A conexão fica criptografada normalmente.
+A loja abre em **https://localhost:5000** com o **cadeado normal**. Na primeira execução ela cria um
+certificado próprio e o registra no sistema, do mesmo jeito que a ferramenta mkcert:
 
-**Para tirar o aviso (cadeado sem alerta)**, use o [mkcert](https://github.com/FiloSottile/mkcert):
+- **Windows:** aparece uma janela perguntando se deseja instalar o certificado da "Papelaria Crista".
+  Clique em **Sim**. Se o Chrome já estava aberto, feche e abra de novo uma vez.
+- **macOS:** o sistema pede a sua senha uma vez.
+- **Linux:** usa o `certutil` (pacote `libnss3-tools`) para o Chrome.
+
+É seguro: a autoridade criada só consegue assinar endereços **deste computador e da rede de casa**
+(localhost, 127.x, 192.168.x, 10.x...). Ela não pode imitar nenhum site da internet, mesmo que alguém
+copie os arquivos.
+
+- Para instalar de novo: `python -m backend.manage certificado`
+- Para rodar sem HTTPS: `python run.py --http`
+- **No celular** (modo `--rede`) o aviso continua, porque o certificado é do seu PC. Para os clientes
+  abrirem em qualquer aparelho **sem aviso nenhum**, publique no GitHub Pages (abaixo).
+
+### Loja na internet com HTTPS de verdade (GitHub Pages, grátis)
 
 ```bash
-# Windows (PowerShell):  winget install FiloSottile.mkcert
-# Mac:                   brew install mkcert
-mkcert -install
-mkcert -cert-file data/certs/cert.pem -key-file data/certs/key.pem localhost 127.0.0.1 ::1
-python run.py
+python tools/publicar_site.py
 ```
 
-Para rodar sem HTTPS: `python run.py --http`.
+Na **primeira vez**, ative no GitHub: **Settings › Pages › Build and deployment › Source: "Deploy from a
+branch" › Branch: `gh-pages` / `(root)` › Save**. Em 1 a 2 minutos a loja fica em
+`https://SEU-USUARIO.github.io/NOME-DO-REPOSITORIO/`, com certificado válido. Sempre que mudar a loja,
+rode o comando de novo. (Lembre de preencher o WhatsApp em `CONFIGURACAO_LOJA`, em `frontend/loja/loja.js`,
+antes de publicar: no GitHub Pages não há painel administrativo.)
 
 ### Antes de publicar (checklist)
 
@@ -142,9 +161,10 @@ papelaria-crista/
 │   ├── js/core/  js/pages/   # scripts do painel
 │   └── img/                  # fotos dos produtos, ícones, uploads
 ├── tools/build_loja.py       # gera o frontend/index.html
+├── tools/publicar_site.py    # publica a loja no GitHub Pages (HTTPS)
 ├── tests/
-│   ├── test_api.py           # 39 testes da API
-│   └── test_e2e.py           # 29 testes no navegador (loja, painel, PC, celular, HTTPS, arquivo sozinho)
+│   ├── test_api.py           # 41 testes da API e do certificado
+│   └── test_e2e.py           # 31 testes no navegador (loja, painel, animações, PC, celular, HTTPS)
 ├── docs/
 │   ├── API.md                # documentação dos endpoints
 │   ├── RELATORIO_TESTES.md   # relatório dos testes e correções
@@ -190,7 +210,7 @@ proteção contra acesso a arquivos fora da pasta do site e limite de pedidos po
 ```bash
 pip install -r requirements-dev.txt
 playwright install chromium
-pytest            # roda os 68 testes (API + navegador)
+pytest            # roda os 72 testes (API + navegador)
 pytest tests/test_api.py   # só a API (não precisa de navegador)
 ```
 

@@ -174,6 +174,7 @@
       b.setAttribute("aria-label", `${tem ? "Adicionar aos" : "Remover dos"} favoritos: ${p.name}`);
     });
     if (botao) { botao.classList.remove("coracao-anima"); void botao.offsetWidth; botao.classList.add("coracao-anima"); }
+    if (!tem) explosao(botao);
     atualizarContadores(tem ? null : "favs");
     toast(tem ? `Removido dos favoritos.` : `“${p.name}” salvo nos favoritos.`, tem ? "" : "ok", { img: p.image });
     if (rotaAtual().nome === "favoritos") route();
@@ -195,6 +196,98 @@
     $("#abrir-carrinho").setAttribute("aria-label", `Abrir carrinho (${plural(valores.carrinho, "item", "itens")})`);
   }
 
+  /* ------------------------------------------------------------------ animações */
+  const anima = !reduzMovimento && typeof Element.prototype.animate === "function";
+
+  /** Alvo visível do carrinho: barra inferior no celular, ícone do topo no PC. */
+  function alvoCarrinho() {
+    const barra = $('.barra-inferior [data-rota="carrinho"]');
+    return barra && barra.offsetParent ? barra : $("#abrir-carrinho");
+  }
+
+  /** A foto do produto "voa" até o carrinho. */
+  function voarParaCarrinho(origem) {
+    const alvo = alvoCarrinho();
+    const pulsar = () => { alvo.classList.remove("alvo-carrinho"); void alvo.offsetWidth; alvo.classList.add("alvo-carrinho"); };
+    if (!anima || !origem) return pulsar();
+    const a = origem.getBoundingClientRect();
+    const b = alvo.getBoundingClientRect();
+    if (!a.width || a.bottom < 0 || a.top > innerHeight) return pulsar();
+    const lado = Math.min(a.width, a.height, 180);
+    const voo = document.createElement("img");
+    voo.src = origem.currentSrc || origem.src;
+    voo.alt = "";
+    voo.className = "voando";
+    Object.assign(voo.style, { width: `${lado}px`, height: `${lado * 1.25}px`, left: `${a.left + (a.width - lado) / 2}px`, top: `${a.top + (a.height - lado * 1.25) / 2}px` });
+    document.body.append(voo);
+    const dx = b.left + b.width / 2 - (a.left + a.width / 2);
+    const dy = b.top + b.height / 2 - (a.top + a.height / 2);
+    voo.animate([
+      { transform: "translate(0, 0) scale(1) rotate(0)", opacity: 1 },
+      { transform: `translate(${dx * .45}px, ${dy * .45 - 120}px) scale(.55) rotate(-8deg)`, opacity: 1, offset: .45 },
+      { transform: `translate(${dx}px, ${dy}px) scale(.08) rotate(10deg)`, opacity: .35 },
+    ], { duration: 820, easing: "cubic-bezier(.5, 0, .3, 1)" }).finished.then(() => { voo.remove(); pulsar(); }, () => voo.remove());
+  }
+
+  /** Pequena explosão de partículas a partir de um elemento. */
+  function explosao(el, simbolos = ["♥", "♥", "✿", "♥"], qtd = 10) {
+    if (!anima || !el) return;
+    const r = el.getBoundingClientRect();
+    const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    for (let i = 0; i < qtd; i++) {
+      const p = document.createElement("span");
+      p.className = "particula";
+      p.textContent = simbolos[i % simbolos.length];
+      p.style.left = `${cx - 7}px`;
+      p.style.top = `${cy - 7}px`;
+      document.body.append(p);
+      const ang = (Math.PI * 2 * i) / qtd + Math.random() * .4;
+      const dist = 34 + Math.random() * 26;
+      p.animate([
+        { transform: "translate(0, 0) scale(.4)", opacity: 1 },
+        { transform: `translate(${Math.cos(ang) * dist}px, ${Math.sin(ang) * dist - 12}px) scale(1)`, opacity: 0 },
+      ], { duration: 650 + Math.random() * 250, easing: "cubic-bezier(.2, .8, .3, 1)" }).finished.then(() => p.remove(), () => p.remove());
+    }
+  }
+
+  /** Confete de pétalas (pedido concluído). */
+  function confete() {
+    if (!anima) return;
+    const cores = ["#f3bfd0", "#c7b0e6", "#e2edfb", "#d9718f", "#9474c9", "#4f84c8", "#fff"];
+    for (let i = 0; i < 46; i++) {
+      const c = document.createElement("span");
+      c.className = "confete";
+      c.style.background = cores[i % cores.length];
+      c.style.left = `${innerWidth / 2}px`;
+      c.style.top = `${innerHeight * .35}px`;
+      document.body.append(c);
+      const ang = Math.random() * Math.PI * 2;
+      const forca = 120 + Math.random() * Math.min(innerWidth * .4, 320);
+      const x = Math.cos(ang) * forca, y = Math.sin(ang) * forca * .6 - 120;
+      c.animate([
+        { transform: "translate(0, 0) rotate(0) scale(.6)", opacity: 1 },
+        { transform: `translate(${x}px, ${y}px) rotate(${Math.random() * 360}deg) scale(1)`, opacity: 1, offset: .35 },
+        { transform: `translate(${x * 1.2}px, ${y + 420 + Math.random() * 200}px) rotate(${Math.random() * 720}deg) scale(.9)`, opacity: 0 },
+      ], { duration: 2200 + Math.random() * 1200, easing: "cubic-bezier(.15, .7, .35, 1)" }).finished.then(() => c.remove(), () => c.remove());
+    }
+  }
+
+  /** Valor em reais que "conta" até o novo número. */
+  function animarValor(el, para) {
+    if (!el) return;
+    const de = Number(el.dataset.valor ?? para);
+    el.dataset.valor = para;
+    if (!anima || de === para) { el.textContent = money(para); return; }
+    const t0 = performance.now(), dur = 450;
+    const passo = (t) => {
+      const k = Math.min(1, (t - t0) / dur);
+      el.textContent = money(Math.round(de + (para - de) * (1 - (1 - k) ** 3)));
+      if (k < 1) requestAnimationFrame(passo);
+    };
+    requestAnimationFrame(passo);
+    el.classList.remove("muda"); void el.offsetWidth; el.classList.add("muda");
+  }
+
   /* ------------------------------------------------------------------ toasts */
   function toast(msg, tipo = "", { img, acao } = {}) {
     const el = document.createElement("div");
@@ -213,6 +306,10 @@
       toast(p && !p.in_stock ? "Produto esgotado." : `Todas as unidades disponíveis de “${p?.name}” já estão no carrinho.`, "erro");
       return 0;
     }
+    const foto = botao?.closest(".cartao")?.querySelector(".cartao__midia img")
+      || botao?.closest(".espiar")?.querySelector(".espiar__foto img")
+      || (botao?.closest(".produto__info") && $("#foto-zoom img"));
+    voarParaCarrinho(foto);
     if (botao) {
       const original = botao.innerHTML;
       botao.classList.add("adicionado");
@@ -526,6 +623,7 @@
     $("#app").innerHTML = `
     <section class="hero container" aria-label="Destaques da loja">
       <div class="carrossel" id="carrossel" aria-roledescription="carrossel">
+        <div class="petalas" aria-hidden="true"><i class="petala"></i><i class="petala"></i><i class="petala"></i><i class="petala"></i><i class="petala"></i><i class="petala"></i></div>
         <div class="carrossel__trilho" id="trilho" aria-live="off">
           ${slides.map((s, i) => `
           <div class="slide slide--${i + 1}${i === 0 ? " ativo" : ""}" role="group" aria-roledescription="slide" aria-label="${i + 1} de ${slides.length}"${i ? ' aria-hidden="true"' : ""}>
@@ -675,6 +773,16 @@
       x0 = null;
       pausar(false);
     });
+    // profundidade: foto e enfeites acompanham o mouse
+    if (anima && matchMedia("(hover: hover)").matches) {
+      car.addEventListener("pointermove", (e) => {
+        const r = car.getBoundingClientRect();
+        const x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5;
+        car.style.setProperty("--mx", x.toFixed(3));
+        car.style.setProperty("--my", y.toFixed(3));
+      });
+      car.addEventListener("pointerleave", () => { car.style.setProperty("--mx", 0); car.style.setProperty("--my", 0); });
+    }
     const visibilidade = () => pausar(document.hidden);
     document.addEventListener("visibilitychange", visibilidade);
     reiniciar();
@@ -1036,6 +1144,7 @@
     form.addEventListener("submit", (e) => { e.preventDefault(); finalizar(form); });
   }
 
+  let ultimoTotal = null;
   function renderCarrinhoItens() {
     const box = $("#itens-carrinho");
     if (!box) return;
@@ -1060,7 +1169,9 @@
       <div class="resumo__linha"><span>${plural(cart.count(), "item", "itens")}</span><span>${money(cheio)}</span></div>
       ${cheio > total ? `<div class="resumo__linha resumo__linha--ok"><span>Descontos</span><span>− ${money(cheio - total)}</span></div>` : ""}
       <div class="resumo__linha"><span>Frete</span><span>a combinar</span></div>
-      <div class="resumo__total"><span>Total</span><strong id="total">${money(total)}</strong></div>`;
+      <div class="resumo__total"><span>Total</span><strong id="total" data-valor="${ultimoTotal ?? total}">${money(ultimoTotal ?? total)}</strong></div>`;
+    animarValor($("#total"), total);
+    ultimoTotal = total;
   }
 
   function mascaraFone(v) {
@@ -1175,7 +1286,7 @@
     meta("Pedido registrado");
     $("#app").innerHTML = `
     <section class="container"><div class="sucesso" id="tela-sucesso">
-      <div class="sucesso__icone" aria-hidden="true">🕊</div>
+      <svg class="check-anima" viewBox="0 0 90 90" aria-hidden="true"><circle cx="45" cy="45" r="40"/><circle class="circulo" cx="45" cy="45" r="40"/><path d="M28 46l12 12 23-25"/></svg>
       <h1>Pedido ${esc(pedido.code)} ${S.live ? "registrado" : "pronto"}!</h1>
       <p>Total dos produtos: <strong>${money(pedido.total)}</strong>${dados.entrega === "entregar" ? " + frete a combinar" : ""}</p>
       ${wa ? `<p>Agora é só enviar para a loja pelo WhatsApp. Lá vocês combinam ${dados.entrega === "entregar" ? "o frete, " : ""}o pagamento e a entrega.</p>`
@@ -1191,6 +1302,7 @@
     cart.limpar(); // depois de mostrar a tela de sucesso
     $("#copiar-pedido").addEventListener("click", () => copiar(mensagem.replaceAll("*", ""), "Resumo do pedido copiado!"));
     window.scrollTo({ top: 0 });
+    setTimeout(confete, 350);
   }
 
   async function copiar(texto, ok) {
@@ -1288,6 +1400,7 @@
   /* ------------------------------------------------------------------ revelar ao rolar */
   let observador = null;
   function revelar(agora) {
+    $$(".secao__cab:not(.anima)").forEach((c) => c.classList.add("anima", "revela"));
     const els = $$(".revela:not(.visivel)");
     if (reduzMovimento || !("IntersectionObserver" in window)) { els.forEach((e) => e.classList.add("visivel")); return; }
     observador ??= new IntersectionObserver((entradas) => entradas.forEach((en) => {
@@ -1342,11 +1455,31 @@
       if (e.key === "Escape") { fecharPaineis(); $(".filtros.aberto")?.classList.remove("aberto"); document.body.classList.remove("travado"); }
       if (e.key === "/" && !/input|textarea|select/i.test(document.activeElement.tagName)) { e.preventDefault(); $("#busca-campo").focus(); }
     });
+    document.addEventListener("pointerdown", (e) => {
+      const btn = e.target.closest(".btn");
+      if (!btn || !anima || btn.disabled) return;
+      const r = btn.getBoundingClientRect();
+      const d = Math.max(r.width, r.height);
+      const o = document.createElement("span");
+      o.className = "ondulacao";
+      Object.assign(o.style, { width: `${d}px`, height: `${d}px`, left: `${e.clientX - r.left - d / 2}px`, top: `${e.clientY - r.top - d / 2}px` });
+      btn.append(o);
+      setTimeout(() => o.remove(), 650);
+    });
     const cab = $("#cabecalho");
     const topo = $("#topo-btn");
+    const barra = $("#progresso");
+    let pedido = false;
     addEventListener("scroll", () => {
-      cab.classList.toggle("rolou", scrollY > 10);
-      topo.classList.toggle("mostra", scrollY > 900);
+      if (pedido) return;
+      pedido = true;
+      requestAnimationFrame(() => {
+        pedido = false;
+        cab.classList.toggle("rolou", scrollY > 10);
+        topo.classList.toggle("mostra", scrollY > 900);
+        const max = document.documentElement.scrollHeight - innerHeight;
+        barra.style.transform = `scaleX(${max > 0 ? Math.min(1, scrollY / max) : 0})`;
+      });
     }, { passive: true });
     topo.addEventListener("click", () => window.scrollTo({ top: 0, behavior: reduzMovimento ? "auto" : "smooth" }));
     addEventListener("hashchange", route);

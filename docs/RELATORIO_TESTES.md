@@ -1,11 +1,30 @@
 # Relatório de testes — Papelaria Cristã
 
-**Data:** 12/11/2026  ·  **Resultado final: 68 de 68 testes aprovados** (39 de API + 29 no navegador)
+**Data:** 12/11/2026  ·  **Resultado final: 72 de 72 testes aprovados** (41 de API + 31 no navegador)
 **Ambiente:** Python 3.13, Flask 3.1, Google Chrome (via Playwright), Linux.
 
 ```bash
 pytest -v      # reproduz todos os testes
 ```
+
+## 00. HTTPS sem aviso e animações (13/11/2026)
+
+**Problema relatado:** o Chrome bloqueava a loja em HTTPS ("Sua conexão não é particular"), porque o
+certificado era autoassinado.
+**Correção:** autoridade certificadora local, restrita a localhost e redes privadas, registrada no
+sistema na primeira execução, com o certificado do servidor assinado por ela.
+**Verificado:**
+- o Chrome abriu `https://localhost:5000` **sem ignorar erros de certificado**: status 200, contexto
+  seguro, TLS 1.3, emissor "Papelaria Crista - certificado local";
+- `openssl s_client` deu "Verify return code: 0 (ok)";
+- teste automático com verificação TLS completa;
+- teste provando que a autoridade **não consegue** assinar `google.com` (violação de restrição de nome).
+
+**Animações:** testes confirmam que a foto voa ao carrinho, os corações aparecem, a ondulação acontece,
+o ✓ e o confete aparecem no pedido e os elementos temporários são removidos. Com "reduzir movimento"
+ligado, nada disso aparece e as ações continuam funcionando.
+
+**Teste ajustado:** a leitura do total do carrinho passou a esperar a contagem animada terminar.
 
 ## 0. Nova loja em `index.html` único (13/11/2026)
 
@@ -84,7 +103,7 @@ teclado no celular; `window.open` e compartilhamento bloqueados em páginas publ
 ## 5. Saída da última execução
 
 ```
-tests/test_api.py ....................................... 39 passed
-tests/test_e2e.py ............................. 29 passed
-============================= 68 passed in 65.94s ==============================
+tests/test_api.py ......................................... 41 passed
+tests/test_e2e.py ............................... 31 passed
+============================= 72 passed in 78.82s ==============================
 ```

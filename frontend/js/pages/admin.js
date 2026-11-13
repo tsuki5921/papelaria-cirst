@@ -133,7 +133,24 @@ async function loadSummary() {
     ["Estoque baixo", s.low_stock],
     ["Esgotados", s.out_of_stock],
     ["Vendas confirmadas", money(s.revenue_cents)],
-  ].map(([l, v]) => `<div class="metrica"><small>${l}</small><strong>${v}</strong></div>`).join("");
+  ].map(([l, v]) => `<div class="metrica"><small>${l}</small><strong data-alvo="${typeof v === "number" ? v : ""}">${typeof v === "number" ? 0 : v}</strong></div>`).join("");
+  contarMetricas();
+}
+
+function contarMetricas() {
+  const reduz = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  $$("#metricas [data-alvo]").forEach((el) => {
+    const alvo = Number(el.dataset.alvo);
+    if (el.dataset.alvo === "" ) return;
+    if (reduz || alvo === 0) { el.textContent = alvo; return; }
+    const t0 = performance.now();
+    const passo = (t) => {
+      const k = Math.min(1, (t - t0) / 700);
+      el.textContent = Math.round(alvo * (1 - (1 - k) ** 3));
+      if (k < 1) requestAnimationFrame(passo);
+    };
+    requestAnimationFrame(passo);
+  });
 }
 
 $("#avisos-admin").addEventListener("click", (e) => {

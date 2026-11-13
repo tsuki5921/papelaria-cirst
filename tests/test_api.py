@@ -334,3 +334,52 @@ def test_inicializacao_usa_proxima_porta_livre():
         ocupada.bind(("127.0.0.1", 0))
         ocupada.listen()
         assert run.port_free("127.0.0.1", ocupada.getsockname()[1]) is False
+
+
+def test_certificado_assinado_por_autoridade_local_e_validado(tmp_path):
+    import socket
+    import ssl
+    import threading
+
+    from werkzeug.serving import make_server
+
+    from backend.app import create_app
+    from backend.certs import ensure_certificate
+    cert = ensure_certificate(tmp_path / "certs")
+    app = create_app({"DATABASE": str(tmp_path / "c.db"), "ADMIN_PASSWORD": "senha-de-teste-123"})
+    srv = make_server("127.0.0.1", 0, app, ssl_context=cert)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    try:
+        ctx = ssl.create_default_context(cafile=str(tmp_path / "certs" / "ca.pem"))  # verificação completa
+        with socket.create_connection(("127.0.0.1", srv.server_port)) as s, ctx.wrap_socket(s, server_hostname="localhost") as tls:
+            assert tls.version() in ("TLSv1.2", "TLSv1.3")
+            assert dict(x[0] for x in tls.getpeercert()["issuer"])["commonName"].startswith("Papelaria")
+    finally:
+        srv.shutdown()
+
+
+def test_autoridade_local_nao_pode_assinar_sites_da_internet(tmp_path):
+    """Mesmo com a chave da autoridade, não dá para imitar outro site (restrição de nomes)."""
+    import datetime
+    import subprocess
+
+    from cryptography import x509
+    from cryptography.hazmat.primitives import hashes, serialization
+    from cryptography.hazmat.primitives.asymmetric import rsa
+    from cryptography.x509.oid import NameOID
+
+    from backend.certs import ensure_certificate
+    ensure_certificate(tmp_path)
+    ca = x509.load_pem_x509_certificate((tmp_path / "ca.pem").read_bytes())
+    ca_key = serialization.load_pem_private_key((tmp_path / "ca-key.pem").read_bytes(), None)
+    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    agora = datetime.datetime.now(datetime.timezone.utc)
+    falso = (x509.CertificateBuilder().subject_name(x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "google.com")]))
+             .issuer_name(ca.subject).public_key(key.public_key()).serial_number(1)
+             .not_valid_before(agora).not_valid_after(agora + datetime.timedelta(days=30))
+             .add_extension(x509.SubjectAlternativeName([x509.DNSName("google.com")]), critical=False)
+             .sign(ca_key, hashes.SHA256()))
+    (tmp_path / "falso.pem").write_bytes(falso.public_bytes(serialization.Encoding.PEM))
+    r = subprocess.run(["openssl", "verify", "-CAfile", str(tmp_path / "ca.pem"), str(tmp_path / "falso.pem")],
+                       capture_output=True, text=True)
+    assert r.returncode != 0 and "subtree" in (r.stdout + r.stderr).lower()

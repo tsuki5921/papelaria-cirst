@@ -72,7 +72,15 @@ def abrir(page, rota):
 
 
 def money(page, sel):
-    return float(re.sub(r"[^\d,]", "", page.text_content(sel)).replace(",", "."))
+    """Lê um valor em reais depois que a animação de contagem terminar."""
+    anterior = None
+    for _ in range(30):
+        atual = page.text_content(sel)
+        if atual == anterior:
+            break
+        anterior = atual
+        page.wait_for_timeout(80)
+    return float(re.sub(r"[^\d,]", "", anterior).replace(",", "."))
 
 
 # ---------------------------------------------------------------- 1. páginas, telas e erros
@@ -317,6 +325,41 @@ def test_favoritos_espiar_e_carrossel(page):
     assert page.get_attribute('[data-ir-slide="1"]', "aria-current") == "true"
     page.click('[data-ir-slide="0"]')
     assert page.get_attribute('[data-ir-slide="0"]', "aria-current") == "true"
+
+
+# ---------------------------------------------------------------- animações
+def test_animacoes_voo_coracoes_ondulacao_e_confete(page):
+    abrir(page, "#/produtos")
+    page.evaluate("""() => { window.__vistos = new Set();
+      new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(n => n.className && window.__vistos.add(String(n.className)))))
+        .observe(document.body, { childList: true, subtree: true }); }""")
+    page.locator("#lista [data-add]").first.click()
+    page.locator("#lista [data-fav]").first.click()
+    page.wait_for_timeout(200)
+    vistos = page.evaluate("[...window.__vistos]")
+    assert "voando" in vistos, "foto deve voar até o carrinho"
+    assert "particula" in vistos, "corações ao favoritar"
+    assert "ondulacao" in vistos, "ondulação no botão"
+    page.wait_for_timeout(1200)
+    assert page.locator(".voando, .particula").count() == 0, "elementos temporários são removidos"
+    page.goto("/#/carrinho")
+    page.fill("#c-nome", "Ana"); page.fill("#c-tel", "11987654321")
+    page.click("#finalizar")
+    page.wait_for_selector("#tela-sucesso .check-anima")
+    page.wait_for_selector(".confete", state="attached")
+
+
+def test_sem_animacoes_para_quem_prefere_menos_movimento(browser, server):
+    ctx, pg = novo_contexto(browser, server, reduced_motion="reduce")
+    try:
+        abrir(pg, "#/produtos")
+        pg.locator("#lista [data-add]").first.click()
+        pg.wait_for_timeout(100)
+        assert pg.locator(".voando, .ondulacao").count() == 0
+        assert pg.text_content("#abrir-carrinho .contador") == "1"  # a ação funciona normalmente
+        assert pg.is_hidden(".petalas") if pg.locator(".petalas").count() else True
+    finally:
+        ctx.close()
 
 
 # ---------------------------------------------------------------- arquivo único aberto sem servidor

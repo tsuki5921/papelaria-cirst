@@ -524,3 +524,14 @@ dialog[open] { animation: entrar .25s ease; }
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }
 .vazio .hero__acoes { justify-content: center; }
+
+/* ---------------------------------------------------------------- animações do painel */
+[role="tabpanel"]:not([hidden]) { animation: entrar .35s ease both; }
+.metrica { animation: entrar .5s ease both; transition: transform .25s ease, box-shadow .25s ease; }
+.metrica:hover { transform: translateY(-3px); box-shadow: var(--sombra); }
+.metrica:nth-child(2) { animation-delay: .05s; } .metrica:nth-child(3) { animation-delay: .1s; }
+.metrica:nth-child(4) { animation-delay: .15s; } .metrica:nth-child(5) { animation-delay: .2s; }
+.tabela tbody tr { transition: background .2s; }
+.tabela tbody tr:hover { background: var(--rosa-50); }
+.pedido { animation: entrar .35s ease both; }
+.admin-login { animation: entrar .5s ease both; }

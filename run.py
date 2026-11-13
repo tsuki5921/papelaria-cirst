@@ -64,10 +64,12 @@ def main(argv):
     ip = lan_ip() if network else None
     use_https = "--http" not in argv and os.environ.get("HTTPS", "1") != "0"
     ssl_context = None
+    cert_ok, cert_msg = True, ""
     if use_https:
         try:
-            from backend.certs import ensure_certificate
+            from backend.certs import ensure_certificate, trust_ca
             ssl_context = ensure_certificate(ROOT / "data" / "certs", extra_ips=[ip] if ip else [])
+            cert_ok, cert_msg = trust_ca(ROOT / "data" / "certs")
         except ImportError:
             print("Aviso: pacote 'cryptography' não instalado — iniciando SEM HTTPS.")
             print("       Para HTTPS rode:  pip install -r requirements.txt\n")
@@ -90,8 +92,15 @@ def main(argv):
         else:
             print("  Não foi possível descobrir o IP da rede local.")
     if use_https:
-        print("  Aviso de certificado no navegador? Clique em 'Avançado' >")
-        print("  'Continuar para localhost' (o certificado é do seu próprio PC).")
+        print(f"  {'🔒' if cert_ok else '⚠'} {cert_msg}")
+        if cert_ok:
+            print("  Se o navegador já estava aberto, feche-o e abra de novo uma vez.")
+        else:
+            print("  O navegador pode mostrar um aviso: clique em 'Avançado' > 'Continuar'.")
+            print("  Para tentar de novo:  python -m backend.manage certificado")
+        if network:
+            print("  No celular aparece um aviso de segurança (o certificado é do seu PC).")
+            print("  Para a loja na internet SEM avisos, use o GitHub Pages (veja o README).")
     print("  Mantenha esta janela aberta. Para parar: Ctrl+C")
     print("=" * 66 + "\n")
 

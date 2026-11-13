@@ -601,6 +601,135 @@ dialog[open] { animation: modal .35s var(--ease); }
 @media print {
   .cabecalho, .aviso-topo, .rodape, .barra-inferior, .toasts, .topo-btn { display: none !important; }
 }
+
+/* ==========================================================================
+   Animações (todas desligadas automaticamente para quem prefere menos movimento)
+   ========================================================================== */
+
+/* barra de progresso da página */
+.progresso { position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 200; pointer-events: none;
+  background: linear-gradient(90deg, var(--rosa-500), var(--lilas-500), var(--azul-500));
+  transform-origin: 0 50%; transform: scaleX(0); }
+
+/* logo: brilho ao carregar */
+.marca svg { animation: logo-entra 1.1s var(--ease) both; }
+@keyframes logo-entra { from { opacity: 0; transform: rotate(-90deg) scale(.4); } }
+
+/* entrada do texto do banner, em sequência, a cada slide */
+.slide.ativo .slide__texto > * { animation: sobe .9s var(--ease) both; }
+.slide.ativo .slide__texto > :nth-child(2) { animation-delay: .1s; }
+.slide.ativo .slide__texto > :nth-child(3) { animation-delay: .2s; }
+.slide.ativo .slide__texto > :nth-child(4) { animation-delay: .3s; }
+.slide.ativo .slide__arte { animation: foto-entra 1.1s var(--ease) both; }
+.slide.ativo .slide__etiqueta { animation: etiqueta-entra .8s .5s var(--ease) both; }
+@keyframes sobe { from { opacity: 0; transform: translateY(26px); filter: blur(4px); } }
+@keyframes foto-entra { from { opacity: 0; transform: translateX(40px) scale(.92) rotate(4deg); } }
+@keyframes etiqueta-entra { from { opacity: 0; transform: translateY(14px) scale(.8); } }
+.slide__foto { translate: calc(var(--mx, 0) * -22px) calc(var(--my, 0) * -16px); transition: translate .6s var(--ease); }
+.ornamento--a { translate: calc(var(--mx, 0) * -30px) calc(var(--my, 0) * -20px); transition: translate .8s var(--ease); }
+.ornamento--b { translate: calc(var(--mx, 0) * 36px) calc(var(--my, 0) * 26px); transition: translate .8s var(--ease); }
+
+/* pétalas caindo no banner */
+.petalas { position: absolute; inset: 0; z-index: 3; pointer-events: none; overflow: hidden; }
+.petala { position: absolute; top: -30px; width: 14px; height: 18px; border-radius: 80% 0 80% 0; opacity: 0;
+  background: linear-gradient(135deg, #fff, var(--rosa-300)); box-shadow: 0 2px 6px rgba(196, 90, 124, .15);
+  animation: petala-cai linear infinite; }
+.petala:nth-child(1) { left: 8%;  animation-duration: 13s; animation-delay: 0s; }
+.petala:nth-child(2) { left: 22%; animation-duration: 16s; animation-delay: 3s; width: 10px; height: 13px; }
+.petala:nth-child(3) { left: 38%; animation-duration: 12s; animation-delay: 6s; background: linear-gradient(135deg, #fff, var(--lilas-300)); }
+.petala:nth-child(4) { left: 55%; animation-duration: 15s; animation-delay: 1.5s; width: 11px; height: 14px; }
+.petala:nth-child(5) { left: 71%; animation-duration: 14s; animation-delay: 4.5s; background: linear-gradient(135deg, #fff, var(--azul-100)); }
+.petala:nth-child(6) { left: 87%; animation-duration: 17s; animation-delay: 8s; }
+@keyframes petala-cai {
+  0% { opacity: 0; transform: translate(0, 0) rotate(0); }
+  10% { opacity: .9; }
+  50% { transform: translate(40px, 300px) rotate(200deg); }
+  90% { opacity: .8; }
+  100% { opacity: 0; transform: translate(-20px, 620px) rotate(420deg); }
+}
+
+/* ondulação ao tocar em botões */
+.ondulacao { position: absolute; border-radius: 50%; background: rgba(255, 255, 255, .45); transform: scale(0);
+  pointer-events: none; animation: onda .6s ease-out forwards; }
+.btn--claro .ondulacao, .btn--fantasma .ondulacao { background: rgba(125, 90, 180, .18); }
+@keyframes onda { to { transform: scale(2.6); opacity: 0; } }
+
+/* produto voando até o carrinho */
+.voando { position: fixed; z-index: 300; pointer-events: none; object-fit: cover; border-radius: 16px;
+  box-shadow: 0 18px 40px -10px rgba(59, 38, 89, .45); }
+.alvo-carrinho { animation: alvo .6s var(--ease); }
+@keyframes alvo { 30% { transform: scale(1.3) rotate(-8deg); } 60% { transform: scale(.92) rotate(4deg); } }
+
+/* corações ao favoritar e confete de pétalas */
+.particula { position: fixed; z-index: 300; pointer-events: none; font-size: 14px; line-height: 1; color: var(--rosa-600); }
+.confete { position: fixed; z-index: 300; pointer-events: none; width: 10px; height: 14px; border-radius: 70% 0 70% 0; }
+
+/* sucesso: ✓ desenhando */
+.check-anima { width: 86px; height: 86px; margin: 0 auto 1rem; display: block; }
+.check-anima circle { fill: none; stroke: var(--lilas-200); stroke-width: 4; }
+.check-anima .circulo { stroke: var(--ok); stroke-dasharray: 251; stroke-dashoffset: 251; animation: desenha .8s .1s var(--ease) forwards; transform: rotate(-90deg); transform-origin: center; }
+.check-anima path { fill: none; stroke: var(--ok); stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 60; stroke-dashoffset: 60; animation: desenha .5s .75s var(--ease) forwards; }
+@keyframes desenha { to { stroke-dashoffset: 0; } }
+
+/* gaveta: itens entrando em sequência */
+.painel-lateral.aberto .gaveta-item { animation: desliza .5s var(--ease) both; }
+.painel-lateral.aberto .gaveta-item:nth-child(2) { animation-delay: .06s; }
+.painel-lateral.aberto .gaveta-item:nth-child(3) { animation-delay: .12s; }
+.painel-lateral.aberto .gaveta-item:nth-child(4) { animation-delay: .18s; }
+.painel-lateral.aberto .gaveta-item:nth-child(n+5) { animation-delay: .24s; }
+.painel-lateral.aberto .menu-movel li { animation: desliza-esq .45s var(--ease) both; }
+.painel-lateral.aberto .menu-movel li:nth-child(2) { animation-delay: .04s; }
+.painel-lateral.aberto .menu-movel li:nth-child(3) { animation-delay: .08s; }
+.painel-lateral.aberto .menu-movel li:nth-child(4) { animation-delay: .12s; }
+.painel-lateral.aberto .menu-movel li:nth-child(n+5) { animation-delay: .16s; }
+@keyframes desliza { from { opacity: 0; transform: translateX(30px); } }
+@keyframes desliza-esq { from { opacity: 0; transform: translateX(-24px); } }
+
+/* títulos de seção surgindo */
+.secao__cab.anima { opacity: 0; transform: translateY(18px); transition: opacity .8s var(--ease), transform .8s var(--ease); }
+.secao__cab.anima.visivel { opacity: 1; transform: none; }
+.sobretitulo::before { transition: width .9s .2s var(--ease); }
+.secao__cab.anima:not(.visivel) .sobretitulo::before { width: 0; }
+
+/* página de produto */
+.app-entra .produto__foto { animation: revela-foto .9s var(--ease) both; }
+.app-entra .produto__info > * { animation: sobe .7s var(--ease) both; }
+.app-entra .produto__info > :nth-child(2) { animation-delay: .05s; }
+.app-entra .produto__info > :nth-child(3) { animation-delay: .1s; }
+.app-entra .produto__info > :nth-child(4) { animation-delay: .15s; }
+.app-entra .produto__info > :nth-child(n+5) { animation-delay: .2s; }
+@keyframes revela-foto { from { clip-path: inset(0 0 100% 0 round 34px); transform: scale(1.05); } to { clip-path: inset(0 0 0 0 round 34px); } }
+
+/* total do carrinho piscando ao mudar */
+.muda { animation: muda .5s var(--ease); }
+@keyframes muda { 40% { color: var(--rosa-600); transform: scale(1.08); } }
+
+/* barra inferior: indicador da aba ativa */
+.barra-inferior .icone { transition: transform .3s var(--ease); }
+.barra-inferior [aria-current="page"] .icone { transform: translateY(-2px) scale(1.08); }
+
+/* toasts com contagem do tempo */
+.toast { position: relative; overflow: hidden; }
+.toast::after { content: ""; position: absolute; left: 0; bottom: 0; height: 3px; width: 100%; background: currentColor; opacity: .18; transform-origin: 0 50%; animation: tempo-toast 4.2s linear forwards; }
+.toast--ok::after { background: var(--ok); opacity: .5; }
+@keyframes tempo-toast { to { transform: scaleX(0); } }
+
+/* esqueleto enquanto carrega */
+.carregando { display: grid; gap: 1.5rem; padding: 2rem 0 4rem; }
+.carregando__banner { height: clamp(300px, 40vw, 480px); border-radius: var(--r-xl); }
+.carregando__grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1.5rem; }
+.carregando__grade div { aspect-ratio: 4 / 6; border-radius: var(--r-lg); }
+.brilho { background: linear-gradient(100deg, var(--lilas-50) 30%, #fff 50%, var(--lilas-50) 70%); background-size: 300% 100%; animation: brilho 1.3s linear infinite; }
+@keyframes brilho { from { background-position: 100% 0; } to { background-position: -50% 0; } }
+
+/* categorias: ícone balança ao surgir */
+.categoria.visivel .categoria__icone { animation: balanca .9s .2s var(--ease); }
+@keyframes balanca { 30% { transform: rotate(-10deg) scale(1.08); } 60% { transform: rotate(6deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .petalas, .progresso { display: none; }
+  .secao__cab.anima { opacity: 1; transform: none; }
+}
 </style>
 </head>
 <body>
@@ -640,7 +769,14 @@ dialog[open] { animation: modal .35s var(--ease); }
     </div>
   </header>
 
-  <main id="app" tabindex="-1"></main>
+  <div class="progresso" id="progresso" aria-hidden="true"></div>
+
+  <main id="app" tabindex="-1">
+    <div class="container carregando" aria-label="Carregando a loja">
+      <div class="carregando__banner brilho"></div>
+      <div class="carregando__grade"><div class="brilho"></div><div class="brilho"></div><div class="brilho"></div><div class="brilho"></div></div>
+    </div>
+  </main>
 
   <footer class="rodape" id="rodape"></footer>
 
@@ -860,6 +996,7 @@ dialog[open] { animation: modal .35s var(--ease); }
       b.setAttribute("aria-label", `${tem ? "Adicionar aos" : "Remover dos"} favoritos: ${p.name}`);
     });
     if (botao) { botao.classList.remove("coracao-anima"); void botao.offsetWidth; botao.classList.add("coracao-anima"); }
+    if (!tem) explosao(botao);
     atualizarContadores(tem ? null : "favs");
     toast(tem ? `Removido dos favoritos.` : `“${p.name}” salvo nos favoritos.`, tem ? "" : "ok", { img: p.image });
     if (rotaAtual().nome === "favoritos") route();
@@ -881,6 +1018,98 @@ dialog[open] { animation: modal .35s var(--ease); }
     $("#abrir-carrinho").setAttribute("aria-label", `Abrir carrinho (${plural(valores.carrinho, "item", "itens")})`);
   }
 
+  /* ------------------------------------------------------------------ animações */
+  const anima = !reduzMovimento && typeof Element.prototype.animate === "function";
+
+  /** Alvo visível do carrinho: barra inferior no celular, ícone do topo no PC. */
+  function alvoCarrinho() {
+    const barra = $('.barra-inferior [data-rota="carrinho"]');
+    return barra && barra.offsetParent ? barra : $("#abrir-carrinho");
+  }
+
+  /** A foto do produto "voa" até o carrinho. */
+  function voarParaCarrinho(origem) {
+    const alvo = alvoCarrinho();
+    const pulsar = () => { alvo.classList.remove("alvo-carrinho"); void alvo.offsetWidth; alvo.classList.add("alvo-carrinho"); };
+    if (!anima || !origem) return pulsar();
+    const a = origem.getBoundingClientRect();
+    const b = alvo.getBoundingClientRect();
+    if (!a.width || a.bottom < 0 || a.top > innerHeight) return pulsar();
+    const lado = Math.min(a.width, a.height, 180);
+    const voo = document.createElement("img");
+    voo.src = origem.currentSrc || origem.src;
+    voo.alt = "";
+    voo.className = "voando";
+    Object.assign(voo.style, { width: `${lado}px`, height: `${lado * 1.25}px`, left: `${a.left + (a.width - lado) / 2}px`, top: `${a.top + (a.height - lado * 1.25) / 2}px` });
+    document.body.append(voo);
+    const dx = b.left + b.width / 2 - (a.left + a.width / 2);
+    const dy = b.top + b.height / 2 - (a.top + a.height / 2);
+    voo.animate([
+      { transform: "translate(0, 0) scale(1) rotate(0)", opacity: 1 },
+      { transform: `translate(${dx * .45}px, ${dy * .45 - 120}px) scale(.55) rotate(-8deg)`, opacity: 1, offset: .45 },
+      { transform: `translate(${dx}px, ${dy}px) scale(.08) rotate(10deg)`, opacity: .35 },
+    ], { duration: 820, easing: "cubic-bezier(.5, 0, .3, 1)" }).finished.then(() => { voo.remove(); pulsar(); }, () => voo.remove());
+  }
+
+  /** Pequena explosão de partículas a partir de um elemento. */
+  function explosao(el, simbolos = ["♥", "♥", "✿", "♥"], qtd = 10) {
+    if (!anima || !el) return;
+    const r = el.getBoundingClientRect();
+    const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    for (let i = 0; i < qtd; i++) {
+      const p = document.createElement("span");
+      p.className = "particula";
+      p.textContent = simbolos[i % simbolos.length];
+      p.style.left = `${cx - 7}px`;
+      p.style.top = `${cy - 7}px`;
+      document.body.append(p);
+      const ang = (Math.PI * 2 * i) / qtd + Math.random() * .4;
+      const dist = 34 + Math.random() * 26;
+      p.animate([
+        { transform: "translate(0, 0) scale(.4)", opacity: 1 },
+        { transform: `translate(${Math.cos(ang) * dist}px, ${Math.sin(ang) * dist - 12}px) scale(1)`, opacity: 0 },
+      ], { duration: 650 + Math.random() * 250, easing: "cubic-bezier(.2, .8, .3, 1)" }).finished.then(() => p.remove(), () => p.remove());
+    }
+  }
+
+  /** Confete de pétalas (pedido concluído). */
+  function confete() {
+    if (!anima) return;
+    const cores = ["#f3bfd0", "#c7b0e6", "#e2edfb", "#d9718f", "#9474c9", "#4f84c8", "#fff"];
+    for (let i = 0; i < 46; i++) {
+      const c = document.createElement("span");
+      c.className = "confete";
+      c.style.background = cores[i % cores.length];
+      c.style.left = `${innerWidth / 2}px`;
+      c.style.top = `${innerHeight * .35}px`;
+      document.body.append(c);
+      const ang = Math.random() * Math.PI * 2;
+      const forca = 120 + Math.random() * Math.min(innerWidth * .4, 320);
+      const x = Math.cos(ang) * forca, y = Math.sin(ang) * forca * .6 - 120;
+      c.animate([
+        { transform: "translate(0, 0) rotate(0) scale(.6)", opacity: 1 },
+        { transform: `translate(${x}px, ${y}px) rotate(${Math.random() * 360}deg) scale(1)`, opacity: 1, offset: .35 },
+        { transform: `translate(${x * 1.2}px, ${y + 420 + Math.random() * 200}px) rotate(${Math.random() * 720}deg) scale(.9)`, opacity: 0 },
+      ], { duration: 2200 + Math.random() * 1200, easing: "cubic-bezier(.15, .7, .35, 1)" }).finished.then(() => c.remove(), () => c.remove());
+    }
+  }
+
+  /** Valor em reais que "conta" até o novo número. */
+  function animarValor(el, para) {
+    if (!el) return;
+    const de = Number(el.dataset.valor ?? para);
+    el.dataset.valor = para;
+    if (!anima || de === para) { el.textContent = money(para); return; }
+    const t0 = performance.now(), dur = 450;
+    const passo = (t) => {
+      const k = Math.min(1, (t - t0) / dur);
+      el.textContent = money(Math.round(de + (para - de) * (1 - (1 - k) ** 3)));
+      if (k < 1) requestAnimationFrame(passo);
+    };
+    requestAnimationFrame(passo);
+    el.classList.remove("muda"); void el.offsetWidth; el.classList.add("muda");
+  }
+
   /* ------------------------------------------------------------------ toasts */
   function toast(msg, tipo = "", { img, acao } = {}) {
     const el = document.createElement("div");
@@ -899,6 +1128,10 @@ dialog[open] { animation: modal .35s var(--ease); }
       toast(p && !p.in_stock ? "Produto esgotado." : `Todas as unidades disponíveis de “${p?.name}” já estão no carrinho.`, "erro");
       return 0;
     }
+    const foto = botao?.closest(".cartao")?.querySelector(".cartao__midia img")
+      || botao?.closest(".espiar")?.querySelector(".espiar__foto img")
+      || (botao?.closest(".produto__info") && $("#foto-zoom img"));
+    voarParaCarrinho(foto);
     if (botao) {
       const original = botao.innerHTML;
       botao.classList.add("adicionado");
@@ -1212,6 +1445,7 @@ dialog[open] { animation: modal .35s var(--ease); }
     $("#app").innerHTML = `
     <section class="hero container" aria-label="Destaques da loja">
       <div class="carrossel" id="carrossel" aria-roledescription="carrossel">
+        <div class="petalas" aria-hidden="true"><i class="petala"></i><i class="petala"></i><i class="petala"></i><i class="petala"></i><i class="petala"></i><i class="petala"></i></div>
         <div class="carrossel__trilho" id="trilho" aria-live="off">
           ${slides.map((s, i) => `
           <div class="slide slide--${i + 1}${i === 0 ? " ativo" : ""}" role="group" aria-roledescription="slide" aria-label="${i + 1} de ${slides.length}"${i ? ' aria-hidden="true"' : ""}>
@@ -1361,6 +1595,16 @@ dialog[open] { animation: modal .35s var(--ease); }
       x0 = null;
       pausar(false);
     });
+    // profundidade: foto e enfeites acompanham o mouse
+    if (anima && matchMedia("(hover: hover)").matches) {
+      car.addEventListener("pointermove", (e) => {
+        const r = car.getBoundingClientRect();
+        const x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5;
+        car.style.setProperty("--mx", x.toFixed(3));
+        car.style.setProperty("--my", y.toFixed(3));
+      });
+      car.addEventListener("pointerleave", () => { car.style.setProperty("--mx", 0); car.style.setProperty("--my", 0); });
+    }
     const visibilidade = () => pausar(document.hidden);
     document.addEventListener("visibilitychange", visibilidade);
     reiniciar();
@@ -1722,6 +1966,7 @@ dialog[open] { animation: modal .35s var(--ease); }
     form.addEventListener("submit", (e) => { e.preventDefault(); finalizar(form); });
   }
 
+  let ultimoTotal = null;
   function renderCarrinhoItens() {
     const box = $("#itens-carrinho");
     if (!box) return;
@@ -1746,7 +1991,9 @@ dialog[open] { animation: modal .35s var(--ease); }
       <div class="resumo__linha"><span>${plural(cart.count(), "item", "itens")}</span><span>${money(cheio)}</span></div>
       ${cheio > total ? `<div class="resumo__linha resumo__linha--ok"><span>Descontos</span><span>− ${money(cheio - total)}</span></div>` : ""}
       <div class="resumo__linha"><span>Frete</span><span>a combinar</span></div>
-      <div class="resumo__total"><span>Total</span><strong id="total">${money(total)}</strong></div>`;
+      <div class="resumo__total"><span>Total</span><strong id="total" data-valor="${ultimoTotal ?? total}">${money(ultimoTotal ?? total)}</strong></div>`;
+    animarValor($("#total"), total);
+    ultimoTotal = total;
   }
 
   function mascaraFone(v) {
@@ -1861,7 +2108,7 @@ dialog[open] { animation: modal .35s var(--ease); }
     meta("Pedido registrado");
     $("#app").innerHTML = `
     <section class="container"><div class="sucesso" id="tela-sucesso">
-      <div class="sucesso__icone" aria-hidden="true">🕊</div>
+      <svg class="check-anima" viewBox="0 0 90 90" aria-hidden="true"><circle cx="45" cy="45" r="40"/><circle class="circulo" cx="45" cy="45" r="40"/><path d="M28 46l12 12 23-25"/></svg>
       <h1>Pedido ${esc(pedido.code)} ${S.live ? "registrado" : "pronto"}!</h1>
       <p>Total dos produtos: <strong>${money(pedido.total)}</strong>${dados.entrega === "entregar" ? " + frete a combinar" : ""}</p>
       ${wa ? `<p>Agora é só enviar para a loja pelo WhatsApp. Lá vocês combinam ${dados.entrega === "entregar" ? "o frete, " : ""}o pagamento e a entrega.</p>`
@@ -1877,6 +2124,7 @@ dialog[open] { animation: modal .35s var(--ease); }
     cart.limpar(); // depois de mostrar a tela de sucesso
     $("#copiar-pedido").addEventListener("click", () => copiar(mensagem.replaceAll("*", ""), "Resumo do pedido copiado!"));
     window.scrollTo({ top: 0 });
+    setTimeout(confete, 350);
   }
 
   async function copiar(texto, ok) {
@@ -1974,6 +2222,7 @@ dialog[open] { animation: modal .35s var(--ease); }
   /* ------------------------------------------------------------------ revelar ao rolar */
   let observador = null;
   function revelar(agora) {
+    $$(".secao__cab:not(.anima)").forEach((c) => c.classList.add("anima", "revela"));
     const els = $$(".revela:not(.visivel)");
     if (reduzMovimento || !("IntersectionObserver" in window)) { els.forEach((e) => e.classList.add("visivel")); return; }
     observador ??= new IntersectionObserver((entradas) => entradas.forEach((en) => {
@@ -2028,11 +2277,31 @@ dialog[open] { animation: modal .35s var(--ease); }
       if (e.key === "Escape") { fecharPaineis(); $(".filtros.aberto")?.classList.remove("aberto"); document.body.classList.remove("travado"); }
       if (e.key === "/" && !/input|textarea|select/i.test(document.activeElement.tagName)) { e.preventDefault(); $("#busca-campo").focus(); }
     });
+    document.addEventListener("pointerdown", (e) => {
+      const btn = e.target.closest(".btn");
+      if (!btn || !anima || btn.disabled) return;
+      const r = btn.getBoundingClientRect();
+      const d = Math.max(r.width, r.height);
+      const o = document.createElement("span");
+      o.className = "ondulacao";
+      Object.assign(o.style, { width: `${d}px`, height: `${d}px`, left: `${e.clientX - r.left - d / 2}px`, top: `${e.clientY - r.top - d / 2}px` });
+      btn.append(o);
+      setTimeout(() => o.remove(), 650);
+    });
     const cab = $("#cabecalho");
     const topo = $("#topo-btn");
+    const barra = $("#progresso");
+    let pedido = false;
     addEventListener("scroll", () => {
-      cab.classList.toggle("rolou", scrollY > 10);
-      topo.classList.toggle("mostra", scrollY > 900);
+      if (pedido) return;
+      pedido = true;
+      requestAnimationFrame(() => {
+        pedido = false;
+        cab.classList.toggle("rolou", scrollY > 10);
+        topo.classList.toggle("mostra", scrollY > 900);
+        const max = document.documentElement.scrollHeight - innerHeight;
+        barra.style.transform = `scaleX(${max > 0 ? Math.min(1, scrollY / max) : 0})`;
+      });
     }, { passive: true });
     topo.addEventListener("click", () => window.scrollTo({ top: 0, behavior: reduzMovimento ? "auto" : "smooth" }));
     addEventListener("hashchange", route);

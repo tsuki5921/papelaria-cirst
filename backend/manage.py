@@ -3,6 +3,7 @@
     python -m backend.manage senha      # define/troca a senha do painel
     python -m backend.manage backup     # cria cópia do banco em data/backups/
     python -m backend.manage reset      # apaga e recria o banco com os dados iniciais
+    python -m backend.manage certificado  # (re)instala o certificado HTTPS local no sistema
 """
 import getpass
 import os
@@ -41,6 +42,14 @@ def main(argv):
             Path(DB + suffix).unlink(missing_ok=True)
         init_db(DB)
         print("Banco recriado com os dados iniciais.")
+    elif cmd == "certificado":
+        from .certs import ensure_certificate, trust_ca
+        folder = ROOT / "data" / "certs"
+        ensure_certificate(folder)
+        ok, msg = trust_ca(folder, force=True)
+        print(msg)
+        if not ok:
+            sys.exit(1)
     else:
         print(__doc__)
 
